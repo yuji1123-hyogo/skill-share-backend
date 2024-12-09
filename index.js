@@ -30,7 +30,7 @@ const checkJWT = require("./midlewear/checkJWT")
 
 
 const corsOptions = {
-    origin: ["http://localhost:3001","http://localhost:3000", "https://skill-share-frontend-3zcm-cn2rjslyx-yuji1123-hyogos-projects.vercel.app"],  // 許可するオリジン
+    origin: ["http://localhost:3001","http://localhost:3000", "https://skill-share-frontend-git-master-yuji1123-hyogos-projects.vercel.app"],  // 許可するオリジン
     credentials: true                 // クッキーを許可
   };
 
