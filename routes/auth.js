@@ -65,6 +65,7 @@ router.post("/login",async(req,res)=>{
 
      res.cookie("token", token, {
         httpOnly: true,     // JavaScriptからアクセスできないようにする
+        sameSite: "none",
         maxAge: 360000000     // クッキーの有効期限(秒)
     });
     
