@@ -38,6 +38,7 @@ router.post("/register",async (req,res)=>{
 //認証が成功したらJWTを返す
 
 router.post("/login",async(req,res)=>{
+  console.log("ログイン")
  const {email,password} = req.body;
  try{
      const user = await User.findOne({email:email});
@@ -53,12 +54,14 @@ router.post("/login",async(req,res)=>{
      }
      
    
+  
       // JWTを生成::::apiとの通信時の認証に利用
       const token = jwt.sign(
          {user},   // ペイロード（トークンに含めるデータ）
            process.env.JWT_SECRET,               // 秘密鍵
          { expiresIn: '200h' }   // 有効期限 (1時間)
      );
+ 
 
      res.cookie("token", token, {
         httpOnly: true,     // JavaScriptからアクセスできないようにする

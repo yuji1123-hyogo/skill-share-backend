@@ -38,7 +38,6 @@ app.use(morgan('combined'));
 app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());  
-app.use(helmet());
 
 
 const mongoose = require("mongoose");
