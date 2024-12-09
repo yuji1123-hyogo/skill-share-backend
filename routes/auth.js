@@ -3,7 +3,7 @@ const router = require("express").Router()
 const User = require("../models/User")
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const isProduction = process.env.NODE_ENV === "production";
 
 // 新規ユーザーの登録
 router.post("/register",async (req,res)=>{
@@ -65,7 +65,8 @@ router.post("/login",async(req,res)=>{
 
      res.cookie("token", token, {
         httpOnly: true,     // JavaScriptからアクセスできないようにする
-        sameSite: "none",
+        secure: isProduction, // 本番環境ではsecureを有効化
+        sameSite: isProduction ? "None" : "Lax", 
         maxAge: 360000000     // クッキーの有効期限(秒)
     });
     
