@@ -1,6 +1,11 @@
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
-require('dotenv').config();
-const cloudinary = require('cloudinary').v2;
+import { CloudinaryStorage } from 'multer-storage-cloudinary';
+import cloudinaryModule from 'cloudinary';
+import { config as dotenvConfig } from 'dotenv';
+
+// 環境変数をロード
+dotenvConfig();
+
+const cloudinary = cloudinaryModule.v2;
 
 // Cloudinaryの初期設定
 cloudinary.config({
@@ -10,11 +15,11 @@ cloudinary.config({
 });
 
 const storage = new CloudinaryStorage({
-    cloudinary:cloudinary,
-    params:{
-        folder:'portfolioapp',
-        allowed_formats:['jpeg','jpg','png']
-    }
-})
+  cloudinary: cloudinary,
+  params: {
+    folder: 'portfolioapp',
+    allowed_formats: ['jpeg', 'jpg', 'png'],
+  },
+});
 
-module.exports = {cloudinary,storage}
+export { cloudinary, storage };

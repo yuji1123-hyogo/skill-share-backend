@@ -1,0 +1,303 @@
+paths:
+  /users/me:
+    get:
+      summary: "自分のユーザー情報を取得"
+      description: "ログインしているユーザーの情報を取得します。"
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "ユーザー情報"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+    put:
+      summary: "自分のユーザー情報を更新"
+      description: "ログインしているユーザーの情報を更新します。"
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+      responses:
+        "200":
+          description: "ユーザー情報が更新されました"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "ユーザー情報が更新されました"
+                  user:
+                    $ref: "#/components/schemas/User"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /users/{userId}:
+    get:
+      summary: "ユーザー情報の取得"
+      description: "指定したユーザーの情報を取得します。"
+      tags:
+        - Users
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9f"
+      responses:
+        "200":
+          description: "ユーザー情報"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserPublic"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users/search:
+    get:
+      summary: "ユーザー検索"
+      description: "条件に一致するユーザー ID のリストを取得します。"
+      tags:
+        - Users
+      parameters:
+        - name: username
+          in: query
+          schema:
+            type: string
+          example: "john_doe"
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+          example: ["JavaScript", "React"]
+      responses:
+        "200":
+          description: "検索結果"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  userIdList:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9f"
+
+  /users/me/clubs:
+    get:
+      summary: "自分のクラブ一覧を取得"
+      description: "ログインしているユーザーが所属しているクラブの ID 一覧を取得します。"
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "クラブ ID 一覧"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clubIdList:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9c"
+
+  /users/{userId}/follow:
+    put:
+      summary: "フォロー / フォロー解除"
+      description: "指定したユーザーをフォローまたはフォロー解除します。"
+      tags:
+        - Users
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9f"
+      responses:
+        "200":
+          description: "フォロー操作の結果"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: "フォローしました"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64b7a0e58eaf5e001c8b3d9f"
+        username:
+          type: string
+          example: "john_doe"
+        email:
+          type: string
+          example: "john@example.com"
+        profilePicture:
+          type: string
+          nullable: true
+          example: "https://example.com/profile.jpg"
+        bio:
+          type: string
+          nullable: true
+          example: "I love coding!"
+        clubs:
+          type: array
+          items:
+            type: string
+            example: "64b7a0e58eaf5e001c8b3d9c"
+        posts:
+          type: array
+          items:
+            type: string
+            example: "64b7a0e58eaf5e001c8b3d9b"
+        following:
+          type: array
+          items:
+            type: string
+            example: "64b7a0e58eaf5e001c8b3d9a"
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "JavaScript"
+              level:
+                type: integer
+                example: 3
+              currentExperience:
+                type: integer
+                example: 150
+              nextLevelExperience:
+                type: integer
+                example: 300
+
+    UserPublic:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64b7a0e58eaf5e001c8b3d9f"
+        username:
+          type: string
+          example: "john_doe"
+        profilePicture:
+          type: string
+          nullable: true
+          example: "https://example.com/profile.jpg"
+        bio:
+          type: string
+          nullable: true
+          example: "I love coding!"
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "React"
+              level:
+                type: integer
+                example: 2
+              currentExperience:
+                type: integer
+                example: 120
+              nextLevelExperience:
+                type: integer
+                example: 250
+
+    UpdateUserRequest:
+      type: object
+      properties:
+        username:
+          type: string
+          example: "john_doe"
+        profilePicture:
+          type: string
+          nullable: true
+          example: "https://example.com/profile.jpg"
+        bio:
+          type: string
+          nullable: true
+          example: "I love coding!"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["React", "JavaScript"]
+
+  responses:
+    Unauthorized:
+      description: "認証エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "認証が必要です"
+
+    BadRequest:
+      description: "無効なリクエスト"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "無効なリクエストです"
+
+    NotFound:
+      description: "リソースが見つかりません"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "ユーザーが見つかりません"

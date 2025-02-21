@@ -1,0 +1,61 @@
+components:
+  responses:
+    BadRequest:
+      description: "リクエストバリデーションエラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "リクエストバリデーションエラー"
+              errors:
+                type: array
+                items:
+                  type: string
+                  example: "emailは必須です"
+
+    Unauthorized:
+      description: "認証エラー（トークンが無効または未提供）"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "認証が必要です"
+
+    Forbidden:
+      description: "アクセス権限がありません"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "この操作を行う権限がありません"
+
+    NotFound:
+      description: "リソースが見つかりません"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "指定されたリソースが見つかりません"
+
+    InternalServerError:
+      description: "サーバー内部エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "サーバー内部エラーが発生しました"

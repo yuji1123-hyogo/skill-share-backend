@@ -1,0 +1,142 @@
+paths:
+  /comments/post/{postId}:
+    post:
+      summary: "コメントの追加"
+      description: "投稿にコメントを追加します。"
+      tags:
+        - Comments
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9b"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCommentRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    get:
+      summary: "投稿のコメント一覧取得"
+      description: "指定した投稿に紐づくコメントの一覧を取得します。"
+      tags:
+        - Comments
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9b"
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 10
+      responses:
+        "200":
+          description: "コメント一覧"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  commentIds:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9a"
+                  pagination:
+                    type: object
+                    properties:
+                      currentPage:
+                        type: integer
+                        example: 1
+                      totalPages:
+                        type: integer
+                        example: 5
+                      totalComments:
+                        type: integer
+                        example: 50
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /comments/{commentId}:
+    get:
+      summary: "コメント詳細取得"
+      description: "指定したコメントの詳細情報を取得します。"
+      tags:
+        - Comments
+      parameters:
+        - name: commentId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9a"
+      responses:
+        "200":
+          description: "コメントの詳細"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Comment"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    CreateCommentRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          example: "Great post!"
+
+  responses:
+    NotFound:
+      description: "リソースが見つかりません"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "コメントが見つかりません"
+
+    Unauthorized:
+      description: "認証エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "認証が必要です"

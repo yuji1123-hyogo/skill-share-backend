@@ -1,0 +1,283 @@
+paths:
+  /clubs:
+    post:
+      summary: "クラブの作成"
+      description: "新しいクラブを作成します。"
+      tags:
+        - Clubs
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateClubRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /clubs/search:
+    get:
+      summary: "クラブ検索"
+      description: "クラブ名またはタグを基にクラブを検索します。"
+      tags:
+        - Clubs
+      parameters:
+        - name: name
+          in: query
+          required: false
+          schema:
+            type: string
+            example: "React Developers"
+        - name: tags
+          in: query
+          required: false
+          schema:
+            type: array
+            items:
+              type: string
+            example: ["JavaScript", "React"]
+      responses:
+        "200":
+          description: "検索結果"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  clubIdList:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9c"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+
+  /clubs/{clubId}:
+    get:
+      summary: "クラブ詳細取得"
+      description: "指定されたクラブの詳細情報を取得します。"
+      tags:
+        - Clubs
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9c"
+      responses:
+        "200":
+          description: "クラブ情報"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Club"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      summary: "クラブ情報更新"
+      description: "クラブの情報を更新します。"
+      tags:
+        - Clubs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9c"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateClubRequest"
+      responses:
+        "200":
+          description: "クラブ情報が更新されました"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "クラブ情報が更新されました"
+                  club:
+                    $ref: "#/components/schemas/Club"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /clubs/{clubId}/members:
+    get:
+      summary: "クラブのメンバー一覧取得"
+      description: "クラブに所属するメンバーの ID を取得します。"
+      tags:
+        - Clubs
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9c"
+      responses:
+        "200":
+          description: "メンバーのIDリスト"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  members:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9f"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /clubs/{clubId}/events:
+    get:
+      summary: "クラブのイベント一覧取得"
+      description: "クラブで開催されたイベントのリストを取得します。"
+      tags:
+        - Clubs
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9c"
+      responses:
+        "200":
+          description: "イベントのIDリスト"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9e"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /clubs/{clubId}/join:
+    post:
+      summary: "クラブ参加"
+      description: "ユーザーがクラブに参加します。"
+      tags:
+        - Clubs
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9c"
+      responses:
+        "200":
+          description: "クラブ参加成功"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "クラブに参加しました"
+                  clubId:
+                    type: string
+                    example: "64b7a0e58eaf5e001c8b3d9c"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    CreateClubRequest:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+          example: "React Developers"
+        description:
+          type: string
+          nullable: true
+          example: "A club for React enthusiasts."
+        themeImage:
+          type: string
+          nullable: true
+          example: "https://example.com/club-banner.jpg"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["JavaScript", "React"]
+
+    UpdateClubRequest:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "React Developers"
+        description:
+          type: string
+          nullable: true
+          example: "Updated club description"
+        themeImage:
+          type: string
+          nullable: true
+          example: "https://example.com/new-club-banner.jpg"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["Node.js", "React"]
+
+  responses:
+    NotFound:
+      description: "リソースが見つかりません"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "クラブが見つかりません"
+
+    Unauthorized:
+      description: "認証エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "認証が必要です"

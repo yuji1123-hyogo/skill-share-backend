@@ -1,0 +1,220 @@
+App.jsx  
+    |               # dispatch: fetchCurrentUserAsyncThunk = Redux Persist を使わないため、リロード時に再フェッチ
+    |               # API: fetchCurrentUserAPI  
+    |               # ローカル状態: isBackEndBoot (初期値: false)
+    |               # ロジック: useEffect(checkBackEndBoot)
+    |                   # 利用されるAPI: checkBackEndBootAPI
+    |               # 条件付きレンダリング: isBackEndBoot ? <LoginPage> : <BackEndBootAwaitPage />
+    ├── pages/
+          ├── BackEndBootAwaitPage.jsx  
+          |      # 役割: バックエンド起動待機画面  
+          |      # 表示: 「バックエンドを起動しています...」などのメッセージのみ
+          ├── LoginPage.jsx                                                                    
+          |      ├── templates/  
+          |             ├── AuthFormLayout.jsx       # 役割: 認証ページのレイアウト  
+          |                    ├── organisms/              
+          |                         ├── LoginForm.jsx  
+          |                              # 役割: RHFを使ったフォームの状態管理とログインロジック
+          |                              # 共通レイアウト (children): AuthFormLayout.jsx
+          |                              # useForm: defaultValuesにバリデーションルールを集約
+          |                              # 入力フィールド (必須): email
+          |                              # 入力フィールド (必須): password (バリデーション: 3文字以上)
+          |                              # handleSubmitのコールバック: onSubmitLogin  
+          |                                  # dispatch: loginAsyncThunk                        
+          |                                      # 利用されるAPI: loginUserAPI                        
+          |                              # 表示: <FormErrorMessage error={errors.email} />                
+          ├── RegisterPage.jsx                                                         
+          |      ├── templates/  
+          |             ├── AuthFormLayout.jsx       # 役割: 認証ページのレイアウト  
+          |                    ├── organisms/                                                         
+          |                         ├── RegisterForm.jsx  
+          |                              # 役割: RHFを使ったフォームの状態管理と新規登録ロジック
+          |                              # 共通レイアウト (children): AuthFormLayout.jsx
+          |                              # useForm: defaultValuesにバリデーションルールを集約
+          |                              # 入力フィールド (必須): username (バリデーション: checkExistUsernameAPI)
+          |                              # 入力フィールド (必須): email
+          |                              # 入力フィールド (必須): password (バリデーション: 3文字以上)
+          |                              # 入力フィールド (必須): confirmPassword (バリデーション: passwordとの一致)
+          |                              # handleSubmitのコールバック: onSubmitRegister     
+          |                                  # 利用されるAPI: registerUserAPI
+          |                              # 表示: <FormErrorMessage error={errors.password} />
+          ├── HomePage.jsx     
+          |      # 役割: 投稿一覧の取得と投稿ロジック
+          |      |   # useQuery: useFetchHomePostIdListQuery (データ: homePostIdList = 自分 + フォロー中ユーザーの投稿)
+          |      |       # 利用されるAPI: fetchHomePostIdListAPI
+          |      |   # イベントハンドラ: handleAddPost (内容: useAddPostMutation)
+          |      |       # 利用されるMutation: useAddPostMutation (無効化するタグ: HomePostList, { type: ProfilePostList, id: userId })     
+          |      |           # 利用されるAPI: addPostAPI
+          |      ├── templates/              
+          |            ├── HomeTemplate.jsx      # 役割: ページのレイアウト
+          |                  ├── organisms/                
+          |                       ├── PostFeedWithInput.jsx  
+          |                             # 役割: 投稿一覧 + 投稿用入力フォーム
+          |                             # props: postIdList = homePostIdList   
+          |                             # props: onAddPost = handleAddPost  
+          |                             ├── Feed.jsx       
+          |                             |     # 役割: 投稿一覧のレイアウト
+          |                             |     # props: postIdList  
+          |                             |     ├── Post.jsx  
+          |                             |        # 役割: 個別の投稿
+          |                             |        # props: postId  
+          |                             |        # useQuery: useFetchPostDetailQuery (データ: postDetail)
+          |                             |        # 利用されるAPI: fetchPostDetailAPI
+          |                             |        # 表示: postDetail.content
+          |                             |        ├── molecules/              
+          |                             |        │      ├── UserProfileSummary.jsx  
+          |                             |        │      ├── TagList.jsx  
+          |                             |        ├── CommentList.jsx  
+          |                             |              # 役割: コメント一覧 + 追加機能  
+          |                             |              # props: postId  
+          |                             |              # useQuery: useFetchCommentIdListQuery  
+          |                             |              # イベントハンドラ: handleAddComment (useAddCommentMutation)         
+          |                             |              ├── Comment.jsx  
+          |                             |              |       # useQuery: useFetchCommentDetailQuery  
+          |                             |              |       ├── molecules/
+          |                             |              |               ├── UserProfileSummary.jsx   
+          |                             |              ├── molecules/
+          |                             |                     ├── TextInputWithSendButton.jsx  
+          |                             |                          # 役割: コメント送信用の入力と送信ボタン
+          |                             |                          # props: onClick = handleAddComment  
+          |                             ├── molecules/
+          |                                      ├── TextInputWithSendButton.jsx  
+          |                                           # 役割: 投稿用の入力と送信ボタン  
+          |
+          ├──UserProfilePage.jsx       # 役割: ユーザープロフィールページ
+          |     |  # useQuery: useFetchProfilePostIdListQuery (データ: profilePostIdList = 指定ユーザーの投稿)
+          |     |  # useQuery: useFetchUserDetailQuery (データ: userDetail = 指定ユーザーの情報)
+          |     |  # URL状態: userId
+          |     ├── templates/  
+          |            ├── UserProfileTemplate.jsx  # 役割: ページ全体のレイアウト
+          |                 # props: userId
+          |                 ├── organisms/  
+          |                      ├── Feed.jsx  # 役割: 投稿一覧のレイアウト  
+          |                      |    # props: postIdList = profilePostIdList  
+          |                      ├── UserCard.jsx  # 役割: ユーザー情報 + アクション管理（プロフィールページ用）
+          |                           # props: userId
+          |                           # useQuery: useFetchUserDetailQuery (データ: { username, profilePicture })
+          |                           ├── molecules/  
+          |                                 ├── UserProfileSummary.jsx  # 役割: ユーザー基本情報の表示  
+          |                                 ├── UserActionsContainer.jsx  # 役割: ユーザー関連アクションの管理  
+          |                                 ├── TagList.jsx
+          |      
+          ├──UserFollowingListPage.jsx  # 役割: フォロー中のユーザー一覧
+          |     |  # useQuery: useFetchFollowingIdList (データ: followingIdList)
+          |     ├── templates/  
+          |           ├── UserListTemplate.jsx  # 役割: ユーザーリストの共通レイアウト  
+          |                # props: userIdList = followingIdList  
+          |                ├── organisms/  
+          |
+          ├── SearchPage.jsx        # 役割:検索結果一覧の管理 
+          |      |                  # ローカル状態:serchResults             
+          |      ├── templates/               
+          |            ├── SearchTemplate.jsx      # 役割:検索モードの制御
+          |                  |                     # props:serchResults
+          |                  |                     # ローカル状態:searchMode = 検索モード
+          |                  |                     # イベントハンドラ:handleSearchModeChange(内容:serchResultを空にする⇒switchMode)  
+          |                  |                          # ロジック:switchMode (引数:modeId)(内容:setSearchMode(modeId)) 
+          |                  |                     # props用データの作成:modeItems{modeId(例:userSearch),modelabel(例:"ユーザー検索")}  
+          |                  |                                
+          |                  ├── organisms/                               
+          |                       ├── SearchOptions.jsx      #役割:モードに応じた方法で検索ロジックの定義と 検索クエリ状態の管理 ※検索はあまりキャッシュが有用に活用できないのでRTKQを利用しない
+          |                       |            |             # props:searchMode
+          |                       |            |             # ローカル状態:seachTerm
+          |                       |            |             # ローカル状態:selectedTagList(初期値:空のリスト)
+          |                       |            |             # イベントハンドラ:handleDebounceSearchの定義(内容:searchModeに応じたsearchUserとserachClubの呼び出し
+          |                       |            |                    # ロジック:searchUser(内容:ユーザー検索API⇒検索結果の状態更新⇒クエリを空に)
+          |                       |            |                            # 利用されるAPI:searchUserAPI
+          |                       |            |                    # ロジック:searchClub(内容:クラブ検索APi⇒検索結果の状態更新⇒クエリを空に)
+          |                       |            |                            # 利用されるAPI:searchClubAPI
+          |                       |            ├──Atoms/  
+          |                       |            |       ├── WithDebounceInputField.jsx  #役割:onChangeイベントを発火するイベントターゲット
+          |                       |            |                                       #props:onInputChange(渡されるもの:handleDebounceSearch)
+          |                       |            |                                       #props:input(渡されるもの:serchTerm)
+          |                       |            |                                       
+          |                       |            |              
+          |                       |            ├── TagEdditor.jsx    #役割:検索のクエリとなるタグやユーザー情報の編集などで使われるタグを管理するコンポーネント群のレイアウト
+          |                       |                       |          #props:selectedTag/setselectedTag
+          |                       |                       |          
+          |                       |                       ├── SelectedTagList.jsx      #役割:ユーザーまたはクラブの検索クエリの一部として使うタグ一(selectedTag)覧の管理ロジック
+          |                       |                       |          |                 # props:selectedTagList/setSelectedTagList
+          |                       |                       |          |                 # ロジック:removeFromselectedListの定義(内容:setSelectedTagList(prevList => prevList.filter(prevItem => prevItem != clickedTag)
+          |                       |                       |          |                 # イベントハンドラ:handleRemoveFromselectedListの定義 (内容:removeSFromselectedList)
+          |                       |                       |          ├── molecules/  
+          |                       |                       |                ├── TagList   #役割:selectedtag一覧の表示
+          |                       |                       |                              # props:tagList(渡されるもの:selectedTagList)
+          |                       |                       |                              # props:onClick(渡されるもの:handleRemoveFromselectedList)
+          |                       |                       |      
+          |                       |                       ├── SuggestedTagList.jsx     #役割:suggestedTag(selectedTagの検索候補)に対する状態管理
+          |                       |                              |                    #props:setSelectedTagList
+          |                       |                              |                    #ローカル状態:suggestedTagList
+          |                       |                              |                    #イベントハンドラ:handleAddSelectedTagの定義 (内容:removeFromSuggestedList ⇒ addSelectedList)
+          |                       |                              |                          #ロジック:removeFromSuggestedListの定義 (内容:setSuggestedTagList( prevList => prevList.filter(tag  => tag != clickedTag))
+          |                       |                              |                          #ロジック:addSelectedListの定義 (内容:setSelectedTagList( prevList => [...prevList,clickedTag]))                   
+          |                       |                              |       
+          |                       |                              ├── molecules/  
+          |                       |                              |      ├── TagList     #役割:提案されたタグ一覧のレイアウト
+          |                       |                              |                      #props:tagList(渡されるもの:suggestedTagList)
+          |                       |                              |                      #props:onCkick(渡されるもの:handleAddSelectedTag)
+          |                       |                              |                      #表示:tagList          
+          |                       |                              |
+          |                       |                              ├── TagSearch.jsx       # 役割:suggestedTagを検索するロジック
+          |                       |                                        |             # ローカル状態:tagQuery
+          |                       |                                        |             # イベントハンドラ:handleDebaunceTagSearch(内容:serchTag ⇒　setSuggestedTagList)        
+          |                       |                                        |                  # ロジック:serchtTag(引数:入力中のタグ名) = tagQueryに応じたタグの取得
+          |                       |                                        |                      # 利用されるAPI:suggestTagAPI
+          |                       |                                        |                    
+          |                       |                                        ├──Atoms/  
+          |                       |                                               ├── WithDebounceInputField.jsx  # props:onInputChenge(渡されるもの:handleDebounceTagSuggest)
+          |                       |                                                                               # props:input(渡されるもの:tagQuery)
+          |                       |                                                                               
+          |                       |                   
+          |                       ├── SearchResults.jsx             # 役割:検索モードに応じて条件付きレンダリングで検索結果一覧のUI制御
+          |                       |         |                       # props:searchResults
+          |                       |         |                       # props:searchMode                     
+          |                       |         |         
+          |                       |         |── UserCard.jsx        #役割:個別のユーザー情報の状態管理.検索結果A:searchMode === userSearch　で表示
+          |                       |         |                       #props:userId(渡されるもの:searchResult)
+          |                       |         |          
+          |                       |         ├── ClubCard.jsx        #役割:クラブの詳細情報の状態管理.検索結果B:searchMode === userSearch　で表示
+          |                       |                   |             #props:clubId(渡されるもの:searchResult)
+          |                       |                   |             #useQuery:useFetchClubDetealQuery(データ:clubDeteal)(付与されるタグ:{type:club,id:clubId})
+          |                       |                   |                   #利用されるAPI:fetchClubDetealAPI
+          |                       |                   |
+          |                       |                   |
+          |                       |                   ├── ClubCardActionsContainer.jsx       #役割:クラブ関連の機能のロジック管理
+          |                       |                   |           |                          #props:clubId(渡されるもの:clubId)
+          |                       |                   |           |                          #props:members
+          |                       |                   |           |                          #イベントハンドラ:handleNavigateToClubDeteal(引数:clubId)
+          |                       |                   |           |                          #useSelector:userId(currentUser.userId)
+          |                       |                   |           |                          #イベントハンドラ:handleJoinClub(内容:useJoinClubMutation)
+          |                       |                   |           |                               #利用されるmutation:useJoinClubMutation(無効化されるタグ:{type:clubDeteal,id:clubId},{type:user,id:currentUser.userId},MyClubList)
+          |                       |                   |           |                                    #利用されるAPI:joinClubAPI
+          |                       |                   |           |                          
+          |                       |                   |           |                 
+          |                       |                   |           ├── ClubCardActionsPresentation        # 役割:参加状況に応じたクラブ関連機能ボタンのUI制御    
+          |                       |                   |                                                  # props:onNavigateToClubDeteal(渡されるもの:handleNavigateToClubDeteal)
+          |                       |                   |                                                  # props:onJoinClub(渡されるもの:handleJoinClub)
+          |                       |                   |                                                  # props:userId(渡されるもの:currentUser.userId)
+          |                       |                   |                                                  # 条件付きレンダリング: isParticipte = members.some((member)=> member.userId === userId)
+          |                       |                   |                                                       #isParticipate === trueの時:
+          |                       |                   |                                                           #表示:クラブ詳細ページへの遷移ボタン(イベントターゲット:onNavigateToClubDeteal)
+          |                       |                   |                                                       #isParticipate === falseの時
+          |                       |                   |                                                           #表示:クラブ参加ボタン(イベントターゲット:onJoinClu)                            
+          |                       |                   |                                   
+          |                       |                   |                                   
+          |                       |                   ├── molecules/   
+          |                       |                           ├── ClubBaseInfo.jsx    # 役割: クラブの詳細情報の表示
+          |                       |                                  |                # props:clubname
+          |                       |                                  |                # props:members
+          |                       |                                  |                # props:tags
+          |                       |                                  |                # グローバル状態:userId
+          |                       |                                  |                # UIロジック: isParticipte = members.some((member)=> member.userId === userId)
+          |                       |                                  |                # 条件済みレンダリング: isParticipte ? "参加済み" : "未参加"
+          |                       |                                  |                # 表示:clubname
+          |                       |                                  |      
+          |                       |                                  ├── UsernameandIcon.jsx    #props:username,userIcon   #表示:membersのusername+Icon       
+          |                       |                                  ├── TagList.jsx.jsx           
+          |                       ├── molecules/
+          |                              ├── TabSwitcher  
+          |                                                                                   
+          |                                                   

@@ -1,0 +1,243 @@
+paths:
+  /posts:
+    post:
+      summary: "投稿を作成"
+      description: "新しい投稿を作成します。"
+      tags:
+        - Posts
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePostRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /posts/{postId}:
+    get:
+      summary: "投稿の詳細取得"
+      description: "指定した投稿の詳細情報を取得します。"
+      tags:
+        - Posts
+      parameters:
+        - name: postId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9b"
+      responses:
+        "200":
+          description: "投稿の詳細情報"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Post"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /posts/users/{userId}:
+    get:
+      summary: "ユーザーの投稿一覧取得"
+      description: "指定したユーザーの投稿 ID 一覧を取得します。"
+      tags:
+        - Posts
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9f"
+      responses:
+        "200":
+          description: "ユーザーの投稿 ID 一覧"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  postIdList:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9b"
+
+  /posts/clubs/{clubId}:
+    get:
+      summary: "クラブの投稿一覧取得"
+      description: "指定したクラブの投稿 ID 一覧を取得します。"
+      tags:
+        - Posts
+      parameters:
+        - name: clubId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9c"
+      responses:
+        "200":
+          description: "クラブの投稿 ID 一覧"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  postIdList:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9b"
+
+  /posts/home:
+    get:
+      summary: "ホームの投稿一覧取得"
+      description: "ログインユーザーのホームフィードに表示される投稿 ID 一覧を取得します。"
+      tags:
+        - Posts
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: "ホームフィードの投稿 ID 一覧"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  postIdList:
+                    type: array
+                    items:
+                      type: string
+                      example: "64b7a0e58eaf5e001c8b3d9b"
+
+components:
+  schemas:
+    CreatePostRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          example: "React is awesome!"
+        media:
+          type: string
+          nullable: true
+          example: "https://example.com/react.png"
+        club:
+          type: string
+          nullable: true
+          example: "64b7a0e58eaf5e001c8b3d9c"
+
+    Post:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "64b7a0e58eaf5e001c8b3d9b"
+        content:
+          type: string
+          example: "React is awesome!"
+        media:
+          type: string
+          nullable: true
+          example: "https://example.com/react.png"
+        author:
+          type: string
+          example: "64b7a0e58eaf5e001c8b3d9f"
+        club:
+          type: string
+          nullable: true
+          example: "64b7a0e58eaf5e001c8b3d9c"
+        comments:
+          type: array
+          items:
+            type: string
+            example: "64b7a0e58eaf5e001c8b3d9a"
+        tags:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                example: "ReactJS"
+              level:
+                type: integer
+                example: 2
+              currentExperience:
+                type: integer
+                example: 100
+              nextLevelExperience:
+                type: integer
+                example: 200
+        createdAt:
+          type: string
+          format: date-time
+          description: "作成日時 (ISO 8601フォーマット)"
+
+  responses:
+    Created:
+      description: "リソース作成成功"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "投稿が作成されました"
+
+    BadRequest:
+      description: "無効なリクエスト"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "無効なリクエストです"
+
+    Unauthorized:
+      description: "認証エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "認証が必要です"
+
+    Forbidden:
+      description: "権限エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "権限がありません"
+
+    NotFound:
+      description: "リソースが見つかりません"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "投稿が見つかりません"

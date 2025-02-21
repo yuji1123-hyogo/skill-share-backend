@@ -1,0 +1,6 @@
+src/api/
+├── apiSlice.ts        # RTK Query の createApi (API スライス)
+├── usersSlice.ts      # Redux の createSlice (ユーザー管理)
+├── authSlice.ts       # Redux の createSlice (認証管理)
+├── types.ts           # OpenAPI に基づいた TypeScript 型定義
+└── index.ts           # エクスポート用

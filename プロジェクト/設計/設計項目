@@ -1,0 +1,1506 @@
+設計項目:
+    コンポーネント設計
+    状態管理（State Management）
+    データフロー設計
+    ルーティング設計
+    エラーハンドリング & バリデーション
+    ディレクトリ構成
+
+やるべきこと
+
+
+    不足している情報の追加:
+        propsの明確化とAtomsの追加
+        API の詳細化（リクエスト・レスポンスの形式、エラーハンドリング） 
+        エラーメッセージの管理（バリデーションエラー、APIエラーの表示）
+        ローディング処理
+
+エラー設計/ローディング設計
+ルーティング設計
+API設計
+状態の設計
+
+
+
+ページ内で操作するドメインのデータ構造
+
+
+#グローバル状態で管理するデータ:
+    #自分の基本ユーザー情報
+    #RTKQueryで管理しない方がよい理由:
+        #useQueryをApp.jsに配置して子コンポーネントでmautationでもいいのでは？⇒RTKではフォロー用のAPIなど個別APIとのやり取りのみで済むものが、個別APIでmutation+currentUserの自動リフェッチと不要なAPIとのやり取りが生まれてしまう
+        #userIdなどの状態を参照したいだけの場合の扱いの複雑さ⇒useSelectorも利用可能だがRTKの管理かRTKQueryの管理かわかりずらくなってしまう
+    #RTKQueryで管理しなくてよい理由 :
+        #自分主導でしか変更を行わないデータのため適切に管理すればデータベースとの整合性は崩れない
+
+#サーバー同期状態で管理するデータ:
+   #他人によっても更新されるデータ:定期的にフェッチしないと整合性が崩れかねない
+   #他人に対しての動作のあるデータ:他人によっても管理される情報がサーバー同期状態であることからmutationを行う必要があるため、そのうえdispatchを行って管理するのは非効率
+   #なら毎回フェッチすればよいのでは？⇒APIリクエストがさすがに過剰
+   #結論:ある程度のリアルタイムの情報が求められつつ極力APIリクエストを抑えたいもの
+   #完全リアルタイム:websocket
+
+
+
+
+コンポーネント設計設計:
+        App.jsx       
+            |               # ローカル状態: isBackEndBoot (初期値: false)
+            |               # ロジック: useEffect(checkBackEndBoot)
+            |                   # 利用されるAPI: checkBackEndBootAPI
+            |               # 条件付きレンダリング: isBackEndBoot ? <AuthPage> : <BackEndBootAwaitPage />
+            |
+            ├── pages/
+                  ├── BackEndBootAwaitPage.jsx  
+                  |      # 役割: バックエンド起動待機画面  
+                  |      # 表示: 「バックエンドを起動しています...」などのメッセージのみ
+                  ├── AuthPage.jsx                                                                    
+                  |      ├── templates/  
+                  |             ├── AuthTemplates.jsx       #役割:認証ページのレイアウト + ログインタブ/新規登録タブの定義
+                  |                    |                    #イベントハンドラ:handleAuthModeChange
+                  |                    ├── molecules/
+                  |                    |       ├── Tabs     #必用なタブを受け取る タブ切替ロジックの定義と実行   
+                  |                    ├── organisms/              
+                  |                    |     ├──LoginForm.jsx                        
+                  |                    |                          # 役割:RHFでフォームの状態管理(Yupと統合しバリデーションエラーを管理)
+                  |                    |                          # カスタムフック:ログインロジックとAPIエラーの管理
+                  |                    |                          # カスタムフック内のdispatch:authSliceのログイン状態の更新(ログイン状態はルート保護に利用)
+                  |                    |                          # 共通レイアウト (children): AuthFormLayout.jsx           
+                  |                    |
+                  |                    ├── organisms/                                                        
+                  |                         ├──RegisterForm.jsx   # 役割:RHFを使っててフォームの状態管理
+                  |                                               # 共通レイアウト (children): AuthFormLayout.jsx
+                  |                                               # カスタムフック内の処理:新規登録成功時にタブを切り替えてログインフォームを表示 
+                  |                     
+           Outlet:<ProtectedPage>  
+                  |                    # 役割:ルートの保護 + リロード時にリセットされてしまったログイン中のユーザー情報の再フェッチ
+                  |                    # state.authSlice.userIdがない場合は認証ページにリダイレクト 
+                  |                    # useQuery:useQetPublicUser 
+                  |                     
+                  ├── HomePage.jsx         #役割:ホームのポスト一覧の状態管理(useQuery)と投稿ロジックの管理
+                  |      |                 #useQuery:useFechHomePostIdListQuery(データ:homePostIdList=自分とフォロー中のユーザーの投稿の一覧)(付与されるタグ:HomePostList)
+                  |      |                 #イベントハンドラ:handleAddPost(利用されるMutation:useAddPostMutation)                     
+                  |      |                                
+                  |      ├── templates/              
+                  |            ├── HomeTemplate.jsx      # 役割:投稿一覧+メッセージ送信用コンポーネントのレイアウトを管理。
+                  |                  |                               
+                  |                  ├── organisms/               
+                  |                          ├── PostList.jsx       #役割:ポスト一覧のレイアウト。
+                  |                          |     |            #props:postIdList(渡されるもの:postIdList)　＝　投稿一覧
+                  |                          |     |                 
+                  |                          |     |           
+                  |                          |     ├── PostContainer.jsx    #役割:個別のポストの状態管理(useQuery)
+                  |                          |        │                     #props:postId(渡されるもの:postIdListの要素)　＝　個別の投稿ID
+                  |                          |        │                     #useQuery:useGetPostDeteal(データ:postDeteal:{content,tags,author:{username:profilePicture}})(付与されるタグ:{type:Post,id:postId})
+                  |                          |        │                     #表示:ポスト内容:postDeteal.content 
+                  |                          |   PostPresentation.jsx
+                  |                          |        ├── molecules/              
+                  |                          |        │      ├── UserProfileSummary.jsx     #役割:ユーザー名とアイコンのレイアウト
+                  |                          |        |      |                              #props:username(渡されるもの:postDeteal.author.username)
+                  |                          |        |      |                              #props:profilrPicture(渡されるもの:postDeteal.author.profilePicture)
+                  |                          |        │      ├── TagList.jsx      #役割:ポストに付与されたタグ一覧のレイアウト
+                  |                          |        |
+                  |                          |        |
+                  |                          |        ├── CommentSection.jsx          # 役割:コメント一覧の状態管理(useQuery)とコメント投稿ロジック
+                  |                          |               |                     # props:postId(渡されるもの:postIdList)
+                  |                          |               |                     # useQuery:useGetCommentIdListQuery(データ:commentIdList)(付与されるタグ:{ type: 'CommentList', id: postId })
+                  |                          |               |                     # イベントハンドラ:handleAddCommentの定義(利用されるmutation:useAddCommentMutation(無効化するタグ:{ type: 'CommentList', id: postId }))         
+                  |                          |               |                                          
+                  |                          |               ├──CommentContainer.jsx         #役割:個別のコメントの状態管理(useQuery)
+                  |                          |               |       |                       #useQuery:useGetCommentDeteal(データ:CommentDeteal:{content,author})(付与されるタグ:{type:Comment,id:commentId})
+                  |                          |               |       |                      #表示:commentDeteal.content 
+                  |                          |               |       |       
+                  |                          |               |  CommentPresentation                         
+                  |                          |               |       ├── molecules/
+                  |                          |               |               ├──  UserProfileSummary.jsx    #役割:ユーザー名とアイコンの表示
+                  |                          |               ├── molecules/
+                  |                          |                     ├── TextInputWithButton.jsx     # 役割:メッセージ送信用の入力フィールドとボタン
+                  |                          |                                                                     
+                  |                          |                                                      
+                  |                          ├── molecules/
+                  |                                   ├── TextInputWithButton.jsx   # 役割:ポスト投稿用の入力とボタン
+                  |                                                                           
+                  |                                                                           
+                  |                         
+                  |                         
+                  ├── ProfilePage.jsx       #役割:プロフィールページのポスト一覧の状態管理(useQuery)
+                  |      |                  #useQuery:useFechProfilePostIdListQuery(データ:ProfilePostIdList=自分とフォロー中のユーザーの投稿の一覧)(付与されるタグ:{type:ProfilePostList,id:userId})
+                  |      |                  #URL状態:targetUserId
+                  |      |                              
+                  |      ├── templates/              
+                  |            ├── ProfileTemplate.jsx          #役割:ページのレイアウト
+                  |                  ├── organisms/               
+                  |                          ├── PostList.jsx(実装済み)      #役割:ポスト一覧のレイアウト　
+                  |                          |                              #props:postIdLis                                
+                  |                          |           
+                  |                          ├── UserCard.jsx           #役割:個別のユーザー情報の状態管理(useQuery) + レイアウト
+                  |                                  |                  #props:targetUserId
+                  |                                  |                  #useSelector:currentUserId
+                  |                                  |                  #useQuery:useGetPublicUserDetailQuery(targetUserid)
+                  |                                  |                            
+                  |                                  ├── molecules/
+                  |                                  |     ├── UserProfileSummary.jsx   # 表示:ユーザー名+アイコン
+                  |                                  |     ├── TagList.jsx              # 役割:ユーザーの登録しているタグを表示
+                  |                                  |                                                               
+                  |                                  ├── UserActionButtons.jsx            #役割:対象ユーザーとログイン中のユーザーとの関係性に応じたユーザー関連操作ボタン群のUI制御
+                  |                                                                 #対象ユーザーとログインユーザーの関係性判定ロジック:
+                  |                                                                     # 判定項目:自分のユーザーカードか？フォロー中か？フォロー解除か？
+                  |                                                                     # 必用な引数:targetUserId, currentUserId, following
+                  |                                                                     # 必用な状態:フォローリストの状態を更新してフォロー状態の再レンダリングをトリガーする
+                  |                                                                  # ユーザー関連機能:     
+                  |                                                                         #ロジック:フォロ―/フォロー解除のロジックの定義
+                  |                                                                         #ロジック:プロフィール編集ページ遷移のロジックの定義
+                  |                                                                  # 条件付きレンダリング: isMyself && プロフィール編集ページ遷移ボタン(イベントターゲット(onClick):handleNavigateToProfileEdd
+                  |                                                                  # 条件付きレンダリング: isFollow ? フォローボタン  :　フォロー解除ボタン (イベントターゲット(onClick):handleFollow )
+                  |                                                                  # 共通の表示:プロフィールページ遷移ボタン(イベントターゲット(onClick):handleNavigateToProfile(currentUserId)) 
+                  |                                                                  
+                  |                                                                             
+                  |
+                  ├── FollowingListPage.jsx      #役割:フォロー中のユーザー一覧の状態管理(useQuery)
+                  |      |                       #useQuery:useGetFollowListQuery                  
+                  |      ├── templates/               
+                  |            ├── FollowingListTemplate.jsx   #役割:ページのレイアウト
+                  |                  |                         #props:followIdList(渡されるもの:followingIdList)
+                  |                  ├── organisms/                                       
+                  |                          ├── UserCard.jsx           
+                  |
+                  |
+                  |                                                       
+                  |                
+                  ├── ClubManagementPage.jsx    
+                  |         |                  
+                  |         ├── templates/              
+                  |             ├── ClubManagementTemplate.jsx   #役割:クラブ作成/参加中のクラブ一覧のタブ切替と条件付きレンダリング
+                  |                     ├── molecules/               
+                  |                     |     ├── Tabs.jsx    
+                  |                     ├── organisms/       
+                  |                            ├── ClubForm.jsx                        #役割:クラブの情報編集/作成フォームの状態管理。    
+                  |                            |          |                            #props:mode(クラブの情報編集/作成フォームの切り替えフラグ 。カスタムフックに渡す.)    
+                  |                            |          |                            #カスタムフック:useFormを内包。クラブの情報編集/作成フォームの状態管理＋onsubmitイベントの管理
+                  |                            |          |                            
+                  |                            |          |                            
+                  |                            |          |                            
+                  |                            |          |                            
+                  |                            |          ├── ImageUploader.jsx      #　役割:画像をアップロードしてURLを取得する
+                  |                            |          |                         #  props: imageURL/setImageURL
+                  |                            |          |                         #  DOM操作(ref):image要素をクリックした際にinput要素のonClickイベントを発火
+                  |                            |          |                         #  イベントハンドラ:handleImageClick  (内容:fileInputRef.current.click())
+                  |                            |          |                         #  イベントハンドラ:handleFileChange  (内容:formdataオブジェクトの作成　⇒　formData.append("image", file) ⇒　画像アップロードAPI(どのドメインでも共通)　=> setImageURL(レスポンスデータ))
+                  |                            |          |                               #  利用されるAPI:imageUploadAPI
+                  |                            |          |                         #  イベントターゲット(onClick):handleImageClick  (設置場所:image)
+                  |                            |          |                         #  イベントターゲット(onChange):handleFileChange (設置場所:input type="file")
+                  |                            |          |                         #  表示:input要素をimg要素で隠蔽して画像をクリックして編集ができるようにする
+                  |                            |          |                                 
+                  |                            |          ├──TagEdditorContainer.jsx    #役割:selectedTagList/suggestedTagListの状態更新　
+                  |                            |                    |                   #props:selectedTagList/setselectedTagList(渡されるもの:selectedTagList)
+                  |                            |                    |                   #ローカル状態:suggestedTagList(初期値:[])
+                  |                            |                    |                   #イベントハンドラ:handleRemoveFromselectedListの定義 (内容:removeSFromselectedList)
+                  |                            |                    |                   #イベントハンドラ:handleAddSelectedTagの定義 (内容:removeFromSuggestedList ⇒ addSelectedList)
+                  |                            |                    |                         #ロジック:removeFromSuggestedListの定義 (内容:setSuggestedTagList( prevList => prevList.filter(tag  => tag != clickedTag))
+                  |                            |                    |                         #ロジック:addSelectedListの定義 (内容:setSelectedTagList( prevList => [...prevList,clickedTag]))     
+                  |                            |                    |                   #ローカル状態:tagQuery
+                  |                            |                    |                   # イベントハンドラ:handleDebaunceTagSearch(内容:serchTag ⇒　setSuggestedTagList)        
+                  |                            |                    |                        # ロジック:serchTag(引数:入力中のタグ名) = tagQueryに応じたタグの取得(利用されるAPI:suggestTagAPI)              
+                  |                            |                    |                           
+                  |                            |                    |                   
+                  |                            |                    ├── TagEdditorPresentation.jsx       #役割:タグ編集フォームのレイアウト     
+                  |                            |                               |                 
+                  |                            |                               ├── molecules/  
+                  |                            |                               |        ├── TagList    #役割:selectedtag一覧の表示
+                  |                            |                               |        |              # props:tagList(渡されるもの:selectedTagList)
+                  |                            |                               |        |              # props:onClick(渡されるもの:handleRemoveFromselectedList)
+                  |                            |                               |        |
+                  |                            |                               |        ├── TagList      
+                  |                            |                               |                           #役割:suggestedTag(selectedTagの検索候補)の表示 
+                  |                            |                               |                           #props:tagList(渡されるもの:suggestedTagList)
+                  |                            |                               |                           #props:onCkick(渡されるもの:handleAddSelectedTag) 
+                  |                            |                               |                     
+                  |                            |                               ├──Atoms/  
+                  |                            |                                    ├── WithDebounceInputField.jsx   #役割:タグのデバウンス検索
+                  |                            |                                                                                  
+                  |                            |         
+                  |                            ├── MyClubList.jsx     #役割:参加中のクラブID一覧の管理
+                  |                                    |              #useQuery:useGetUserClubsQuery   
+                  |                                    |              #取得されるデータ:参加中のクラブ一覧   
+                  |                                    |                
+                  |                                    ├── ClubCard.jsx                #役割:クラブの詳細情報の状態管理+レイアウト　　
+                  |                                           |                        #props:clubId(渡されるもの:clubId)        
+                  |                                           |                        #useQuery:useGetClubDetealQuery
+                  |                                           |
+                  |                                           ├── ClubCardActionButtons.jsx                    #役割:クラブ関連の機能ボタン
+                  |                                           |                                                #props:clubId(渡されるもの:clubId)
+                  |                                           |                                                #props:members
+                  |                                           |                                                #useSelector:userId(state.authSlice.userId)
+                  |                                           |                                                #カスタムフック:クラブ関連ロジック
+                  |                                           |                                                     #クラブ詳細ページへの遷移:handleNavigateToClubDeteal(引数:clubId)
+                  |                                           |                                                     #クラブ参加:handleJoinClub(内容:#利用されるmutation:useJoinClubMutation)     
+                  |                                           |                                                #クラブとの関係性判定ロジック:return {isParticipate,isHost}
+                  |                                           |                                                #条件付き連鎖リング:
+                  |                                           |                                                     #isParticipate === trueの時:ラブ詳細ページへの遷移ボタン                                                           
+                  |                                           |                                                     #isParticipate === falseの時:クラブ参加ボタン                            
+                  |                                           |                                                     #isHost === trueの時:クラブ編集ボタン
+                  |                                           |                                   
+                  |                                           ├── molecules/   
+                  |                                                   ├── ClubBaseInfo.jsx       # 役割:クラブの詳細情報の表示
+                  |                                                   |                          # props:clubDeteal
+                  |                                                   |                          # useSelector:currentuserId = state.authSlice.id
+                  |                                                   |                          # ロジック: isParticipte = members.some((member)=> member.id === currentuserId)
+                  |                                                   |                          # 条件付きレンダリング: isParticipte ? "参加済み" : "未参加"
+                  |                                                   |                 
+                  |                                                   ├── TagList.jsx.jsx        #props:clubDeteal.tags 
+                  |                                                   |         
+                  |                                                   ├── UserSummaryList.jsx     #役割:ユーザーの簡易情報コンポーネントのレイアウト            
+                  |                                                             |                 #props:clubDeteal.members                                       
+                  |                                                             |                 #条件付きレンダリング:club.members.length > 0 ?  club.member.map() : "メンバーがいません"                                
+                  |                                                             ├── UserProfileSummary.jsx                           
+                  |              
+                  |
+                  |
+                  |                                                   
+                  ├── ClubDetailPage.jsx           #役割:クラブ詳細情報の状態管理  + クラブ編集ロジックの定義
+                  |      |                         #URL状態:clubId                     
+                  |      |                         #useQuery:useGetClubDetealQuery
+                  |      |                       
+                  |      |                                                    
+                  |      ├── templates/     
+                  |            ├── ClubDetailTemplate.jsx    #クラブ詳細ページのタブ状態の管理 + 条件付きレンダリングでタブに応じたレイアウト
+                  |                  |                       # ローカル状態:clubDetealMode                  
+                  |                  ├── molecules/ 
+                  |                  |       ├── Tabs☑  # 役割:メンバー一覧タブ/掲示板タブ/クラブ編集タブの切り替え
+                  |                  |                        # club.member[0] === currentUserId の場合のみクラブ編集タブへの遷移が可能 
+                  |                  ├── Atoms/               
+                  |                  |      ├── Button.jsx    #イベント一覧への遷移ボタン     
+                  |                  |
+                  |                  ├── organisms/  
+                  |                          |   #タブ①
+                  |                          ├── ClubBord.jsx    # 役割:クラブのポスト一覧の管理ロジック
+                  |                          |       |           # useQuery:useGetClubPostsQuery(データ:clubPostIdList)
+                  |                          |       |            
+                  |                          |       ├── PostList.jsx☑                                                                                                        
+                  |                          |       ├── PostForm.jsx☑                                                                                                         
+                  |                          |       
+                  |                          |    #タブ②       
+                  |                          ├── ClubMenberList.jsx         #役割:メンバーのユーザーカード一覧のレイアウト      
+                  |                          |            |                 #props:club.member　
+                  |                          |            |                 #条件付きレンダリング:club.members.length > 0 ?  club.member.map() : "メンバーがいません"  
+                  |                          |            |── UserCard.jsx☑           #役割:個別のユーザー情報の状態管理
+                  |                          |
+                  |                          |    #タブ③
+                  |                          ├── ClubForm.jsx☑         #役割:
+                  |                                                        #RHFによるクラブの情報編集/作成フォームの状態管理。クライアントサイドバリデーションエラーの管理。
+                  |                                                        #useMutationを内包するカスタムフックによるAPIコール。APIエラーの管理。
+                  |                                                                              
+                  ├── SearchPage.jsx        # 役割:検索結果一覧の管理  
+                  |      |                  # ローカル状態:serchResults                                 
+                  |      ├── templates/               
+                  |            ├── SearchTemplate.jsx      # 役割:検索タブの制御 + タブに応じたレイアウト
+                  |                  |                     # props:serchResults 
+                  |                  ├── organisms/     
+                  |                       ├── molecules/
+                  |                       |       ├── Tabs☑     #タブ切替の実行                     
+                  |                       |                                 
+                  |                       ├── SearchOptions.jsx      #役割:検索フォームのレイアウト　+  カスタムフックで検索クエリ・検索クエリの管理 ※検索はあまりキャッシュが有用に活用できないのでRTKQを利用しない
+                  |                       |            |             # props:searchMode
+                  |                       |            |             # カスタムフック:useSearch(setSearchResults)
+                  |                       |            |                   # ローカル状態:selectedTagList(初期値:currentuser.tags || [])
+                  |                       |            |                   # ローカル状態:serchTerm(初期値: "" )
+                  |                       |            |                   # ロジック:searchUser(内容:ユーザー検索API⇒検索結果の状態更新)(利用されるAPI:searchUserAPI)
+                  |                       |            |                   # ロジック:searchClub(内容:クラブ検索APi⇒検索結果の状態更新)(利用されるAPI:searchClubAPI)
+                  |                       |            |                   # return {serchTerm,setSearchterm,selectedTagList,setSelectedTagList}
+                  |                       |            ├── TagEdditer.jsx ☑                          
+                  |                       |            ├──Atoms/  
+                  |                       |                ├── InputField.jsx  #役割:ユーザーまたはクラブのでばうんすけんさく
+                  |                       |                                                           
+                  |                       |── UserCard.jsx☑        #役割:個別のユーザー情報の状態管理+レイアウト　　　検索結果A:searchMode === userSearch　で表示
+                  |                       |                       #props:userId(渡されるもの:searchResult)
+                  |                       |          
+                  |                       ├── ClubCard.jsx☑       #役割:クラブの詳細情報の状態管理+レイアウト　　　検索結果B:searchMode === userSearch　で表示
+                  |                                               #props:clubId(渡されるもの:searchResult)                                        
+                  |                                         
+                  ├── EventManagement                      # 役割:イベント一覧とイベント作成の条件付きレンダリング
+                  |         |
+                  |         ├── molecules/     
+                  |         |      ├── Tabs.jsx            #役割:イベント一覧と作成を切り替える為のタブ
+                  |         |
+                  |         ├── EventCreationForm.jsx          # 役割:イベント作成フォームのスタイリングとイベント作成用フックの利用
+                  |         |                |                 # RHF:イベント作成フォームの状態保持とクライアントサイドバリデーション
+                  |         |                |                 # カスタムフック: mutationによるイベント作成APIのコールとAPIエラー状態の管理
+                  |         |                |                 
+                  |         |                ├── TagEdditer.jsx  # props:selectedTagList
+                  |         |                ├── ImageUploader.jsx  # props:selectedTagList
+                  |         |                
+                  |         |                   
+                  |         |                
+                  |         |           # 未開催(upcoming)　⇒　イベント参加/イベントステータスの更新が可能(イベントステータスの更新は管理者のみが操作可能)
+                  |         |           # 開催中(ongoing)　⇒　　MVP投票/イベントステータスの更新が可能(MVP投票とイベントステータスの更新は管理者のみが操作可能)
+                  |         |           # 終了済み(completed)　⇒　MVPの確定+ユーザーとクラブのタグへの経験値の分配 が可能(イベント参加者が行う。一連の操作とする。)
+                  |         |                          
+                  |         ├── EventList.jsx            # イベントステータスに応じたイベントの条件付きレンダリング
+                  |                 ├── molecules/              
+                  |                 |      ├── Tabs.jsx        #役割:未開催/開催中/終了済みのタブ切替
+                  |                 |                  
+                  |                 |      
+                  |                 ├── EventCard      #役割:イベント詳細の取得用useQueryの実行。イベント詳細状態の保持。
+                  |                        |            
+                  |                        ├── molecules/  
+                  |                        |       ├── EventbaseInfo.jsx            # 表示:name,description,date,location,club,picture
+                  |                        |               ├── UserSummaryList.jsx    # 表示:participants        
+                  |                        |                          
+                  |                        |
+                  |                        ├── UpcomingActionsContainer.jsx   #役割:未開催のイベントに対するmutationカスタムフックの保持
+                  |                        |               |                  #イベント参加:mutation:useParticipateEventMutation
+                  |                        |               |                  #イベント開始:mutation:useChangeEventStatusMutation
+                  |                        |               |                               
+                  |                        |               ├── UpcomingActionsPresentationjsx            #役割:イベントとユーザーの関係性に応じた未開催イベントアクションボタンのUI制御
+                  |                        |                                                             # イベントとユーザーの関係性の判定ロジック:return {isHost,isVoted,isParticipate}
+                  |                        |                                                             #条件付きレンダリング :
+                  |                        |                                                             # isHost && イベント開始ボタン               
+                  |                        |                                                             # !isParticipate && 参加ボタン                
+                  |                        |                                      
+                  |                        |
+                  |                        ├──OngoingActions.jsx                #役割:開催中のイベントに対するmutationカスタムフックの保持　　　
+                  |                        |               |                    #イベント終了ロジック:mutation:useChangeEventStatusMutation
+                  |                        |               |                    #MVP投票:mutation:useVoteForMVPMutation
+                  |                        |               |                                                
+                  |                        |               ├── OngoingActionsPresentationjsx        #条件付きレンダリング:                 
+                  |                        |                                                        # isHost && イベント終了ボタン  
+                  |                        |                                                        # isParticipate &&  !isVoted && MVP投票ボタン 
+                  |                        |                                                        # isVoted &&  投票済みかどうか
+                  |                        |
+                  |                        ├──CompletedEventActions.jsx   #役割:終了済みのイベントに対するmutationカスタムフックの保持　
+                  |                                        |               #MVPの確定:mutation:usedetermineMVPMutation
+                  |                                        |               #経験値分配:mutation:useddistributeExpMutation
+                  |                                        |                               
+                  |                                        ├── completedActionsPresentationjsx       
+                  |                                                                            #条件付きレンダリング(CompletedEvent):   
+                  |                                                                            # isParticipate && ! mvp && MVP確定
+                  |                                                                            # isParticipate && mvp && !expDistributed && 経験値分配ボタン                                                      
+                  |                                               
+                  |                                                
+                  |
+                  ├── UserEditPage.jsx           #役割:フォームの初期値の為の現在のユーザー情報を取得.ユーザーの編集ロジック                          
+                           |                     #useSelector:user = state.user
+                           |                     #イベントハンドラ:handleUpdateuser(dispatch:updateUserAsynctunk)
+                           |                     #イベントハンドラ:handleCheckExistUsername(利用されるAPI:checkExistUsername)
+                           |                           
+                           ├── templates/             
+                               ├── UserEdditTemplate.jsx 
+                                       ├── organisms/ 
+                                           ├── UserInformationEdditForm.jsx  #役割:ユーザー編集専用ページの編集フォームの状態管理ロジック
+                                                     |                      #childrenを利用:ユーザー/イベント/クラブで共通のフォームレイアウト(FormLayout.jsxFormLayout.jsx)
+                                                     |                      #props::handleUpdateuser
+                                                     |                      #props:handleCheckExistUsername
+                                                     |                      #RHF
+                                                     |                         #handleSubmitのコールバック:handleSubmitUser
+                                                     |                         #ローカル状態:selectedTagList(初期値:user.tags)
+                                                     |                         #ローカル状態:imageURL　
+                                                     |                         #入力フィールド:username(バリデーション(onChange):checkExistUsername)
+                                                     |                         #入力フィールド:bio
+                                                     |                         #入力フィールド:email
+                                                     |                         #入力フィールド:password(バリデーション:3文字以上)
+                                                     | 
+                                                     ├── ImageUploader.jsx                                                                             
+                                                     ├── TagEdditer.jsx                                 
+                             
+
+
+
+# アプリケーションのバリデーション方針を統一
+ケース①単一フィールドのみを扱う場合
+送信用ロジックをカスタムフック化してエラー管理もやらせる⇒
+詳細:YupもuseFormも利用せず送信ロジック内にバリデーションとエラー用のuseStateを持たせる
+採用理由:エラー時のsetStateをコンポーネント内で行うとコンポーネントが複雑になるため。+ yup/RHFを使うには大仰
+
+
+ケース②複数フィールドからなるフォームを扱う場合⇒
+Yup + useFormを利用(resolver)⇒
+詳細:formstate.errorsにYupスキーマと入力内容を照らし合わせたバリデーションエラーを格納
+エラー状態の管理者:useFormのformstate.error
+採用理由:各フィールごとのバリデーション内容を意識せずuseFormにエラーの管理を任せられるため
+
+
+ケース③非同期APIバリデーション(ユーザー名の重複チェックなど)
+usewatch + debounce(重複チェックAPI)カスタムフック⇒
+詳細:特定のフィールドの入力変更に反応しAPIコール
+エラー状態の管理者:カスタムフック内のuseState
+採用理由:onChangeでAPIコールを行うよりもJSXがかなり綺麗に保てる。デバウンスを併用しAPIコールを抑制できる
+
+
+ケース④リアルタイム検索時のバリデーション
+debounce(Yup)カスタムフック⇒
+詳細:カスタムフック内でyupと照らし合わせたバリデーションを行いエラー状態を管理
+採用理由:リアルタイム検索時にAPIコールを抑制するため
+
+
+#エラー通知の扱い
+バリデーションエラーはユーザーに確実なフィードバックを送る事が重要、エラー状態に連動したdisable化が必用になるためトースト通知ではなく状態として扱う。
+APIエラーは例外をのぞいてトースト通知で扱うことによってコンポーネント内でのtry-catch + useStateや不要なuseMutationのエラー状態の利用を削減する
+
+各送信用ロジック内にバリデーションエラーのための状態を内包させる
+
+
+
+## **グローバル状態での管理(RTK)*
+## **認証**
+loginAsync`
+  - **備考**: ログインページへのリダイレクトの基準。reduxpersistで永続化。
+  - **備考**: userIdのみ持たせた理由⇒リダイレクトの基準となる事から状態の更新時にページ単位でのローディングが起こってしまう
+  - **備考**: userIdのみ持たせた理由⇒ユーザー情報すべてをここに持たせるのはUXを損ねてしまう
+  - **処理内容**: ログイン 
+  - **更新するstate**: `userId`  
+  - **API**: `loginUserAPI`  
+
+logoutAsync`
+  - **処理内容**: 
+  - **更新するstate**: `userId`  
+  - **API**: `logoutUserAPI` 
+
+## **サーバー同期状態での管理(RTKQuery)**
+## **ユーザー**
+
+useQuery`
+- **`useGetPublicUserDetailsQuery`**  
+  - **備考**: リロード時にリセットされたログイン中のユーザー情報の再フェッチの役割も担うためほぼすべてのページのルートコンポーネントで利用
+  - **備考**: 認証ページで獲得するuserIdが必用になるため認証以後のページで利用する
+  - **備考**: クッキーを利用するならリクエストにユーザーIDを含まないユーザー取得APIを使えばよかったのでは？⇒後述の経験値分配処理がかなり厄介だったため
+  - **取得データ**: 特定のユーザーのプロフィール情報
+  - **付与されるタグ**: `{ type: 'User', id: userId }`  
+  - **API**: `getPublicUserDetailsAPI`  
+
+
+useMutation`
+- **`useUpdateUserMutation **  
+  - **処理内容**: ユーザー情報を更新 
+  - **無効化するタグ**: `{ type: 'User', id: userId }`  
+  - **API**: `updateUserAPI`  
+
+
+useQuery`
+- **`useGetUserClubsQuery`**  
+  - **備考**: 参加クラブ一覧の情報を利用するときは必ずこちらを利用
+  - **備考**: Userにも含まれる情報ではあるがクラブ参加時にUserを無効化すると再レンダリング範囲が大きくなってしまうため切り離した
+  - **備考**: 他人のクラブ参加情報は更新する機会がないため自分の参加クラブ情報のみを管理する設計にした
+- - **取得データ**:ログイン中のユーザーの参加クラブID一覧
+  - **付与されるタグ**: `'MyClubList'`  
+  - **API**: `getUserClubsAPI`  
+
+useQuery`
+- **`useGetFollowListQuery`**  
+  - **備考**: 参加クラブ一覧と同じ理由
+- - **取得データ**:ログイン中のユーザーの参加クラブID一覧
+  - **付与されるタグ**: `'FollowList'`  
+  - **API**: `getFollowListAPI`  
+
+useMutation`
+- **`useToggleFollowMutation**  
+  - **処理内容**: フォローまたはフォロー解除
+  - **無効化するタグ**: `'FollowList'`  
+  - **API**: `toggleFollowAPI`  
+
+## **投稿 & コメント**
+useQuery`
+- **`useGetHomePostsQuery`**  
+  - **取得データ**: ホーム画面の投稿IDリスト  
+  - **付与されるタグ**: `'HomePostList'`  
+  - **API**: `getHomePostsAPI`  
+
+useQuery`
+- **`useGetUserPostsQuery`**  
+  - **取得データ**: ユーザーごとのプロフィール画面の投稿IDリスト  
+  - **付与されるタグ**: `{ type: 'ProfilePostList', id: userId }`  
+  - **API**: `getUserPostsAPI`  
+
+useQuery`
+- **`useGetClubPostsQuery`**  
+  - **取得データ**: クラブの投稿IDリスト  
+  - **付与されるタグ**: `{ type: 'ClubPostList', id: clubId }`  
+  - **API**: `getClubPostsAPI`  
+
+useMutation`
+- **`useCreatePostMutation`**  
+  - **処理内容**: 投稿を追加  
+  - **備考**: home/profileはすべての投稿処理においてタグを無効化して構わないがクラブはクラブ投稿時のみタグを無効化する。レスポンスデータのpost.clubが基準 
+  - **無効化するタグ**: `'HomePostList'`, `{ type: 'ProfilePostList', id: userId }` , `{ type: 'ClubPostList', id: clubId }`  
+  - **API**: `createPostAPI`  
+
+useQuery`
+- **`useGetPostDetailsQuery`**  
+  - **取得データ**: 投稿詳細データ  
+  - **付与されるタグ**: `{ type: 'Post', id: postId }`  
+  - **API**: `getPostDetailsAPI`  
+
+useQuery`
+- **`useGetCommentsByPostIdQuery`**  
+  - **取得データ**: コメントIDリスト  
+  - **付与されるタグ**: `{ type: 'CommentList', id: postId }`  
+  - **API**: `getCommentsByPostIdAPI`  
+
+useQuery`
+- **`useGetCommentByIdQuery`**  
+  - **取得データ**: コメント詳細データ  
+  - **付与されるタグ**: `{ type: 'Comment', id: commentId }`  
+  - **API**: `getCommentByIdAPI`  
+
+useMutation`
+- **`useCreateCommentMutation`**  
+  - **処理内容**: コメントを追加  
+  - **無効化するタグ**: `{ type: 'CommentList', id: postId }`  
+  - **API**: `createCommentAPI`  
+
+
+
+
+## **クラブ & イベント**
+useQuery`
+- **`useGetClubDetailQuery`**  
+  - **取得データ**: クラブの詳細  
+  - **付与されるタグ**: `{ type: 'ClubDetail', id: clubId }`  
+  - **API**: `getClubDetailAPI`  
+
+useMutation`
+- **`useUpdateClubMutation`**  
+  - **処理内容**: クラブの詳細を更新  
+  - **無効化するタグ**: `{ type: 'ClubDetail', id: clubId }`  
+  - **API**: `updateClubAPI`  
+
+useMutation`
+- **`useJoinClubMutation`**  
+  - **処理内容**: クラブに参加  
+  - **無効化するタグ**: `{ type: 'ClubDetail', id: clubId },'MyClubList'`
+  - **API**: `joinClubAPI`  
+
+useQuery`
+- **` useGetClubEventsQuery`**  
+  - **取得データ**: クラブのイベントID & ステータスリスト  
+  - **付与されるタグ**: `{ type: 'EventList', id: clubId }`  
+  - **API**: `getClubEventsAPI`  
+
+
+useQuery`
+- **`useGetEventByIdAPIQuery`**  
+  - **取得データ**: イベント詳細データ  
+  - **付与されるタグ**: `{ type: 'EventDetail', id: eventId }`  
+  - **API**: `getEventByIdAPIAPI`  
+
+useMutation`
+- **`useCreateEventMutation`**  
+  - **処理内容**: イベントを作成  
+  - **無効化するタグ**: `{ type: 'EventList', id: clubId }`  
+  - **API**: `createEventAPI`  
+
+useMutation`
+- **`useParticipateEventMutation`**  
+  - **処理内容**: イベントに参加  
+  - **無効化するタグ**: `{ type: 'EventDetail', id: eventId }`  
+  - **API**: `participateEventAPI`  
+
+useMutation`
+- **`useUpdateEventStatusMutation`**  
+  - **処理内容**: イベントステータスの更新  
+  - **無効化するタグ**: `{ type: 'EventList', id: clubId }`, `{ type: 'EventDetail', id: eventId }`  
+  - **API**: `updateEventStatusAPI`  
+
+useMutation`
+- **`useDetermineMVPMutation`**  
+  - **処理内容**: MVP確定  
+  - **無効化するタグ**: `{ type: 'EventDetail', id: eventId }`  
+  - **API**: `determineMVPAPI`  
+
+useMutation`
+- **`useVoteForMVPMutation`**  
+  - **処理内容**: MVP投票  
+  - **無効化するタグ**: `{ type: 'EventDetail', id: eventId }`  
+  - **API**: `voteForMVPAPI`  
+
+useMutation`
+- **`useDistributeExpMutation`**  
+  - **処理内容**: 参加者のタグへの経験値分配  
+  - **無効化するタグ**: `{ type: 'ClubDetail', id: clubId }` , `{ type: 'User', id: userId }`, `{ type: 'EventDetail', id: eventId }`  
+  - **API**: `distributeExpAPI`  
+
+
+  
+
+
+
+
+
+データフロー設計:
+API設計
+リクエスト・レスポンスでのnullやundifinedの扱い
+
+・リクエストについて⇒
+    全メソッド共通:
+        params:
+            フロントエンド:nullまたはURLsearchParamsで[]にして送信する。optionalにはしない。
+            バックエンド:すべてのフィールドを受け取る。Yupで念のためデフォルトの[]を適用する
+
+    post時:
+        body(required以外):
+            フロントエンド:
+                reuiredな値は必ずバリデーションで設定するよう促す。
+                undifinedはnull/{}/[]に置き換える。(データベースに保存されるフィールド構造を統一したい&配列のメソッドを使いやすくしたいため)
+            バックエンド:
+                すべてのフィールドを受け取る。データベースのスキーマ定義時にも念のためデフォルト値を設定
+    get時:
+        query:
+            フロントエンド:
+                nullは許容。optionalは許容しない
+            バックエンド:
+                複数登録が可能なクエリを[]に変換。検索に利用するクエリがすべてundifinedなら400エラー
+
+・レスポンスについて⇒
+全メソッド共通:
+    バックエンド:optionalを許容しない。nullまたは[]{}を利用(そのAPIのレスポンス構造に一貫性を持たせたい)。
+    フロントエンド:すべてのフィールドを受け取る。
+
+・データベースについて⇒
+    スキーマ定義時にデフォルト値を設定しpost時のフィールドの欠落を防ぐ
+
+
+
+
+
+
+
+データモデルの整理:
+export type Tag = {
+  name: string;
+  level: number;
+  currentExperience: number;
+  nextLevelExperience: number;
+};
+
+export type User = {
+  id: string;
+  username: string;
+  profilePicture?: string;
+  bio?: string;
+  clubs: string[]; // 参加しているクラブの ID リスト
+  following: string[]; // フォローしているユーザーの ID リスト
+  tags: Tag[]; // ユーザーが持つタグ情報
+};
+
+export type UserResponse = {
+  message: string;
+  user: User;
+};
+
+export type FollowListResponse = {
+  message: string;
+  userIds: string[]; // フォローしているユーザーの ID リスト
+};
+
+export type ClubMember = {
+  id: string;
+  username: string;
+  profilePicture?: string;
+};
+
+export type Club = {
+  id: string;
+  name: string;
+  description?: string;
+  themeImage?: string;
+  members: string[]; // メンバーの ID リスト（詳細取得時は `ClubWithMembers` を使用）
+  events: string[]; // クラブのイベント ID リスト
+  tags: Tag[]; // クラブのタグ情報
+};
+
+export type ClubWithMembers = {
+  id: string;
+  name: string;
+  description?: string;
+  themeImage?: string;
+  members: ClubMember[]; // Populate 済みのメンバー情報
+  events: string[]; // クラブのイベント ID リスト
+  tags: Tag[];
+};
+
+export type ClubResponse = {
+  message: string;
+  club: ClubWithMembers;
+};
+
+export type ClubEvent = {
+  eventId: string;
+  status: "upcoming" | "ongoing" | "completed";
+};
+
+export type ClubEventsResponse = {
+  message: string;
+  events: ClubEvent[];
+};
+
+export type ClubSearchResponse = {
+  message: string;
+  clubIds: string[];
+};
+
+export type UserBasicInfo = {
+  id: string;
+  username: string;
+  profilePicture?: string;
+};
+
+export type Event = {
+  id: string;
+  name: string;
+  description?: string;
+  date?: string; // ISO 8601 形式
+  location?: string;
+  status: "upcoming" | "ongoing" | "completed";
+  club: string; // クラブ ID
+  participants: string[]; // 参加者の ID 配列
+  mvp?: string | null; // MVP の ID（未確定時は null）
+  votes: { voter: string; candidate: string }[]; // MVP 投票情報
+  eventtags: string[]; // イベントのタグ
+ };
+}
+export type EventWithDetails = {
+  id: string;
+  name: string;
+  description?: string;
+  date?: string;
+  location?: string;
+  status: "upcoming" | "ongoing" | "completed";
+  club: string;
+  host: UserBasicInfo;
+  participants: UserBasicInfo[];
+  mvp?: UserBasicInfo | null;
+  votes: { voter: UserBasicInfo; candidate: UserBasicInfo }[];
+  eventtags: string[];
+ };
+}
+
+export type EventResponse = {
+  message: string;
+  event: EventWithDetails;
+};
+
+export type DistributeExpResponse = {
+  message: string;
+  updatedUsers: string[];
+  updatedClub?: string;
+};
+
+
+export type PostAuthor = {
+  id: string;
+  username: string;
+  profilePicture?: string;
+};
+
+export type Post = {
+  id: string;
+  content: string;
+  media?: string | null;
+  club?: string | null;
+  author: PostAuthor;
+  tags: Tag[];
+  comments: string[]; // コメント ID リスト
+  createdAt: string; // ISO 8601 形式
+};
+
+export type PostResponse = {
+  message: string;
+  post: Post;
+};
+
+export type PostIdListResponse = {
+  message: string;
+  postIdList: string[];
+};
+
+export type CommentAuthor = {
+  id: string;
+  username: string;
+  profilePicture?: string;
+};
+
+export type Comment = {
+  id: string;
+  content: string;
+  author: CommentAuthor;
+  post: string; // 投稿 ID
+  createdAt: string; // ISO 8601 形式
+};
+
+export type CommentResponse = {
+  message: string;
+  comment: Comment;
+};
+
+export type CommentIdListResponse = {
+  commentIds: string[];
+  pagination: {
+    currentPage: number;
+    totalPages: number;
+    totalComments: number;
+  };
+};
+
+export type TagSearchResponse = {
+  message: string;
+  tags: string[];
+};
+
+export type UploadImageResponse = {
+  message: string;
+  imageUrl: string;
+};
+
+
+
+
+
+
+必用なエンドポイント
+認証ルート
+    {
+    ユーザー登録
+      処理:bcryptでパスワードをハッシュ化
+      "path": "/api/auth/register",
+      "method": "POST",
+      "request": {
+        "body": {
+          "username": "string",r
+          "email": "string",r
+          "password": "string"r
+        }
+      },
+      "response": {
+        "201": { "message": "ユーザー登録が完了しました (username さん)" },
+        "400": { "message": "このメールアドレスは既に使用されています" },
+        "500": { "message": "ユーザー登録に失敗しました" }
+      }
+    },
+    {
+    ログイン
+      処理:JWTを生成してクッキーに包んで返す
+      "path": "/api/auth/login",
+      "method": "POST",
+      "request": {
+        "body": {
+          "email": "string",r
+          "password": "string"r
+        }
+      },
+      "response": {
+        "200": { "userId": "string" },r
+        "400": { "message": "メールアドレスまたはパスワードが間違っています" },
+        "500": { "message": "ログイン失敗" }
+      }
+    },
+    {
+    ログアウト
+      処理:クッキーの破棄
+      "path": "/api/auth/logout",
+      "method": "POST",
+      "request": {},
+      "response": {
+        clearCookie('token')
+        "200": { "message": "ログアウトしました" }
+      }
+    },
+    既存のユーザー名のチェック(onChangeでフォームの入力中にリアルタイムで発火)
+    {
+      "path": "/api/auth/check-username",
+      "method": "GET",
+      "request": {
+        "query": { "username": "string" }r
+      },
+      "response": {
+        "200": { "exists": true ,"message":"このユーザー名は既に使用されています"},
+        "200_available": { "exists": false ,"message":"このユーザー名は使用可能です"}
+      }
+    },
+    既存のEmailのチェック
+    {
+      "path": "/api/auth/check-email",
+      "method": "GET",
+      "request": {
+        "query": { "email": "string" }r
+      },
+      "response": {
+        "200": { "exists": true ,"message":"このメールアドレスは既に使用されています"},
+        "200_available": { "exists": false ,"message":"このメールアドレスは使用可能です"}
+      }
+    },
+
+以後はクッキー内のトークンがデコードされreq.userIdにログインユーザーのIDが格納される
+ユーザールート
+    ログインユーザーの情報取得
+    {
+      "path": "/api/users/me",
+      "method": "GET",
+      "request": { "userId":ユーザーID(JWTトークンのデコード結果) },
+      "response": {
+        "200": {
+          "id": "string",r
+          "username": "string",r
+          "email": "string",r
+          "profilePicture": "string",n
+          "bio": "string",n
+          "clubs": ["string"],[]
+          "posts": ["string"],[]
+          "following": ["string"],[]
+          "tags": [
+            { "name": "string", "level": 1, "currentExperience": 0, "nextLevelExperience": 100 }
+          ]
+        },
+        "401": { "message": "認証が必要です" }
+      }
+    },
+    
+    特定のユーザー情報を取得
+    {
+      "path": "/api/users/:userId",
+      "method": "GET",
+      "request": { "params": { "userId": "string" } },
+      "response": {
+        "200": {
+          "id": "string",r
+          "username": "string",r
+          "profilePicture": "string",n
+          "bio": "string",n
+          "clubs": ["string"],[]
+          "posts": ["string"],[]
+          "following": ["string"],[]
+          "tags": [
+            { "name": "string", "level": 1, "currentExperience": 0, "nextLevelExperience": 100 }
+          ][]
+        },
+        "404": { "message": "ユーザーが見つかりません" }
+      }
+    },    
+    ユーザーをフォロー / フォロー解除
+    {
+      "path": "/api/users/:userId/follow",
+      "method": "PUT",
+      "request": { "params": 
+            { "userId": "string" }r, 
+            "userId":ユーザーID(JWTトークンのデコード結果) },
+      "response": {
+        "200": { "message": "フォローしました" },
+        "200_unfollow": { "message": "フォローを解除しました" },
+        "400": { "message": "自身をフォローすることはできません" },
+        "404": { "message": "フォローする相手が見つかりませんでした" }
+      }
+    },
+    {
+    自分が参加しているクラブ一覧を取得
+      "path": "/api/users/me/clubs",
+      "method": "GET",
+      "request": {
+         "userId":ユーザーID(JWTトークンのデコード結果) 
+      },
+      "response": {
+        "200": {"clubIdList": ["string"]}
+     }
+    }
+    {
+    ユーザー情報を編集
+      "path": "/api/users/me",
+      "method": "PUT",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "body": {
+          "username": "string",r
+          "profilePicture": "string",n
+          "bio": "string",n
+          "tags": [{ "name": "string", "level": 1, "currentExperience": 0, "nextLevelExperience": 100 }][]
+        }
+      },
+      "response": {
+        "200": { "message": "ユーザー情報が更新されました" },
+        "400": { "message": "ユーザー名が既に使用されています" },
+        "401": { "message": "認証が必要です" }
+      }
+    },
+    {
+    (タグ＋クエリ)でのユーザー検索
+      "path": "/api/users/search",
+      "method": "GET",
+      "request": {
+        "query": { 
+            "username": "string"o,
+             "tags": ["string"]o
+            }
+      },
+      "response": {
+        "200": {"userIdList": ["string"][]}
+      }
+    },
+ポストルート
+    {
+    投稿を作成
+      "path": "/api/posts",
+      "method": "POST",
+      "request": {
+        "body": {
+          "content": "string"r,
+          "media": "string"n,
+          "club": "string"n,
+          "tags": [
+            { "name": "string", "level": 1, "currentExperience": 0, "nextLevelExperience": 100 }
+          ][]
+        },
+        "userId":ユーザーID(JWTトークンのデコード結果)
+      },
+      "response": {
+        "201": { "message": "投稿が作成されました"},
+        "400": { "message": "投稿内容は必須です" }
+      }
+    },
+    {
+    ホームの投稿一覧を取得（フォロー中のユーザー & 自分の投稿）
+      "path": "/api/home/posts",
+      "method": "GET",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果) 
+      },
+      "response": {
+        "200": {"postIdList": ["string"][]}
+      }
+    },
+    {
+    プロフィールの投稿一覧を取得
+      "path": "/api/users/:userId/posts",
+      "method": "GET",
+      "request": {
+        "params": { "userId": ["string"] []}
+      },
+      "response": {
+        "200": {"postIdList": ["string"][]},
+        "404": { "message": "ユーザーが見つかりません" }
+      }
+    },
+    {
+    クラブの投稿一覧を取得
+      "path": "/api/clubs/:clubId/posts",
+      "method": "GET",
+      "request": { "params": { "clubId": "string" r}},
+      "response": {
+        "200": {"postIdList": ["string"][]},
+        "404": { "message": "クラブが見つかりませんでした" }
+      }
+    },
+    {
+    投稿の詳細を取得
+      "path": "/api/posts/:postId",
+      "method": "GET",
+      "request": { "params": { "postId": "string" r} },
+      "response": {
+        "200": {
+          "id": "string"r,
+          "content": "string"r,
+          "media": "string"n,
+          "author": "string"r,
+          "club": "string"n,
+          "tags": [
+            { "name": "string", "level": 1, "currentExperience": 0, "nextLevelExperience": 100 }
+          ][],
+          "comments": ["string"][],
+          "createdAt": "string"r
+        },
+        "404": { "message": "投稿が見つかりませんでした" }
+      }
+    },
+コメントルート
+    {
+    コメントを投稿
+      "path": "/api/posts/:postId/comments",
+      "method": "POST",
+      "request": {
+        "params": { "postId": "string"r },
+        "body": { "content": "string" r},
+        "userId":ユーザーID(JWTトークンのデコード結果)
+      },
+      "response": {
+        "201": { "message": "コメントを追加しました"},
+        "400": { "message": "コメント内容は必須です" }
+      }
+    },
+    {
+    投稿に対するコメント一覧を取得
+      "path": "/api/posts/:postId/comments",
+      "method": "GET",
+      "request": {"params": { "postId": "string" r}},
+      "response": {
+        "200": {"commentIdList": ["string"]},
+        "200_empty": { "message": "コメントはまだありません", "commentIdList": [] }
+        "404": { "message": "投稿が見つかりませんでした" }
+      }
+    },
+    {
+    コメント詳細を取得
+      "path": "/api/comments/:commentId",
+      "method": "GET",
+      "request": {
+        "params": { "commentId": "string"r }
+      },
+      "response": {
+        "200": {
+          "id": "string"r,
+          "content": "string"r,
+          "author": "string"r,
+          "post": "string"r,
+          "createdAt": "string"r
+        },
+        "404": { "message": "コメントが見つかりませんでした" }
+      }
+    },
+クラブルート
+    {
+    クラブを作成
+      "path": "/api/clubs",
+      "method": "POST",
+      "request": {
+        "body": {
+          "name": "string"r,
+          "description": "string"n,
+          "themeImage": "string"n,
+          "tags": ["string"][]
+        },
+        "userId":ユーザーID(JWTトークンのデコード結果)
+      },
+      "response": {
+        "201": { "message": "クラブが作成されました"},
+        "400": { "message": "クラブ名は必須です" }
+      }
+    },
+    {
+    クラブの詳細を取得
+      "path": "/api/clubs/:clubId",
+      "method": "GET",
+      "request": { "params": { "clubId": "string"r } },
+      "response": {
+        "200": {
+          "id": "string"r,
+          "name": "string"r,
+          "description": "string"n,
+          "themeImage": "string"n,
+          "members": ["string"][],
+          "events": ["string"][],
+          "posts": ["string"][],
+          "tags": ["string"][]
+        },
+        "404": { "message": "クラブが見つかりませんでした" }
+      }
+    },
+    {
+    クラブのメンバー一覧を取得
+      "path": "/api/clubs/:clubId/members",
+      "method": "GET",
+      "request": {
+        "params": { "clubId": "string" r}
+      },
+      "response": {
+        "200": {
+          "members": [
+            {
+              "id": "string",
+              "username": "string",
+              "profilePicture": "string"
+            }
+          ][]
+        },
+        "404": { "message": "クラブが見つかりませんでした" }
+      }
+    },
+    {
+    クラブが開催中のイベント一覧（ID とステータス）を取得
+      "path": "/api/clubs/:clubId/events",
+      "method": "GET",
+      "request": {
+        "params": { "clubId": "string" r}
+      },
+      "response": {
+        "200": {
+          "events": [
+            {
+              "id": "string",
+              "status": "upcoming | ongoing | completed"
+            }
+          ][]
+        },
+        "404": { "message": "クラブが見つかりませんでした" }
+      }
+    },
+    {
+    クラブへの参加
+      "path": "/api/clubs/:clubId/join",
+      "method": "POST",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "params": { "clubId": "string" r}
+      },
+      "response": {
+        "200": { "message": "クラブに参加しました" },
+        "403": { "message": "既にクラブのメンバーです" },
+        "404": { "message": "クラブが見つかりません" }
+      }
+    },
+    {
+    クラブ情報を編集
+      "path": "/api/clubs/:clubId",
+      "method": "PUT",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "params": { "clubId": "string" },
+        "body": {
+          "name": "string"r,
+          "description": "string"n,
+          "themeImage": "string"n,
+          "tags": [{ "name": "string", "level": 1, "currentExperience": 0, "nextLevelExperience": 100 }][]
+        }
+      },
+      "response": {
+        "200": { "message": "クラブ情報が更新されました" },
+        "403": { "message": "編集権限がありません" },
+        "404": { "message": "クラブが見つかりません" }
+      }
+    },
+    {
+    (タグ＋クエリ)でのクラブ検索
+      "path": "/api/clubs/search",
+      "method": "GET",
+      "request": {
+        "query": { 
+          "name": "string" o
+        , "tags": ["string"] []}
+      },
+      "response": {
+        "200": {
+          "clubIdList": ["string"] []
+        }
+      }
+    },
+イベントルート
+    {
+    イベントを作成
+      "path": "/api/events",
+      "method": "POST",
+      "request": {
+        "body": {
+          "name": "string" r, 
+          "description": "string" n,
+          "date": "string" n,
+          "location": "string" n,
+          "club": "string" r,
+          "eventtags": ["string"][]
+        },
+        "userId":ユーザーID(JWTトークンのデコード結果)
+      },
+      "response": {
+        "201": { "message": "イベントが作成されました"},
+        "400": { "message": "イベント名は必須です" }
+      }
+    }
+    イベント詳細を取得
+    {
+      "path": "/api/events/:eventId",
+      "method": "GET",
+      "request": {
+        "params": { "eventId": "string" r}
+      },
+      "response": {
+        "200": {
+          "id": "string" r,
+          "name": "string" r,
+          "description": "string" n,
+          "date": "string" n,
+          "location": "string" n,
+          "status": "upcoming | ongoing | completed" r,
+          "club": "string" r,
+          "participants": ["string"] [],
+          "mvp": "string" n,
+          "votes": [
+            {
+              "voter": "string",
+              "candidate": "string"
+            }
+          ] [],
+          "eventtags": ["string"] [],
+          "createdAt": "string" r
+        },
+        "404": { "message": "イベントが見つかりませんでした" }
+      }
+    }
+    {
+    イベントへの参加
+      "path": "/api/events/:eventId/join",
+      "method": "POST",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "params": { "eventId": "string" r}
+      },
+      "response": {
+        "200": { "message": "イベントに参加しました" },
+        "403": { "message": "既に参加済みです" },
+        "404": { "message": "イベントが見つかりません" }
+      }
+    },
+    {
+    イベントステータスの更新
+      "path": "/api/events/:eventId/status",
+      "method": "PUT",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "params": { "eventId": "string" r},
+      },
+      "response": {
+        "200": { "message": "イベントのステータスが更新されました" },
+        "403": { "message": "イベント管理者以外はイベントを更新できません" },
+        "404": { "message": "イベントが見つかりません" }
+      }
+    },
+    {
+    イベントのMVP投票
+      "path": "/api/events/:eventId/vote",
+      "method": "POST",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "params": { "eventId": "string" r},
+        "body": { "candidate": "string" r}
+      },
+      "response": {
+        "200": { "message": "MVP投票が完了しました" },
+        "400": { "message": "候補者はイベントの参加者である必要があります" },
+        "403": { "message": "既に投票済みです" },
+        "404": { "message": "イベントが見つかりません" }
+      }
+    },
+    {
+    MVPの決定
+      "path": "/api/events/:eventId/mvp",
+      "method": "POST",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "params": { "eventId": "string" r}
+      },
+      "response": {
+        "200": { "message": "MVPが確定しました" },
+        "403": { "message": "権限がありません" },
+        "404": { "message": "イベントが見つかりません" }
+      }
+    },
+    {
+    クラブ、ユーザーへの経験値の分配
+      "path": "/api/events/:eventId/distribute-exp",
+      "method": "POST",
+      "request": {
+        "userId":ユーザーID(JWTトークンのデコード結果),
+        "params": { "eventId": "string"r }
+      },
+      "response": {
+        "200": { 
+            {
+              "message": "経験値が分配されました",
+              "updatedUsers": ["userId"][],
+              "updatedClubs": ["clubId"][]
+            }
+         },
+        "403": { "message": "イベント参加者のみが経験値分配を実行できます" },
+        "404": { "message": "イベントが見つかりません" }
+      }
+    },
+検索ルート
+    {
+    ユーザーまたはクラブが登録している既存のタグの検索
+      "path": "/api/tags",
+      "method": "GET",
+      "request": {
+        "query": { "query": "string" r}
+      },
+      "response": {
+        "200": { "tags": ["string"] []}
+      }
+    },
+画像アップロード
+    {
+    画像のアップロード
+      "path": "/api/upload",
+      "method": "POST",
+      "request": {
+        "headers":{
+            "Content-Type":"multipart/form-data"
+        }
+        "userId":ユーザーID(JWTトークンのデコード結果), "Content-Type": "multipart/form-data" ,
+        "body": { "image": "binary" }
+      },
+      "response": {
+        "200": { "url": "string" },
+        "400": { "message": "無効なファイルです" }
+      }
+    }
+
+
+APIの実装
+
+APIクライアント (RTK Query or Axios) の設計
+データフロー (useQuery / useMutation) の整理
+グローバル状態管理 (RTK or useContext) の決定
+コンポーネント設計 (Atoms, Molecules, Organisms)
+ページルーティングの設計 (react-router / Next.js App Router)
+
+✅ 次のステップ: 1️⃣ データフローの設計（どのコンポーネントがどのクエリを実行するか整理）
+2️⃣ 非同期処理 & 状態管理の詳細設計（エラーハンドリング・ローディング・キャッシュの管理）
+3️⃣ ルーティング設計（各ページと useQuery の実行場所をマッピング）
+4️⃣ UIコンポーネント設計（props の受け渡し、共通コンポーネントの整理）
+
+
+必用なデータの洗い出し:
+データの分類:
+管理方法ごとのデータの分類:
+    対応するAPI:
+    取得:
+    更新:
+    エラーハンドリング:
+    関連するデータ:
+
+
+
+
+
+
+
+
+大まかなディレクトリ構造の設計:
+    方針:
+        役割ベースでのディレクトリ構造になるように設計を行う
+
+    主な役割:
+        Components(コンポーネント層)
+            再利用可能な UI 部品。
+            アプリケーションの見た目やレイアウトを構成。
+
+        Pages(ページ層)
+            各ルート(URL)に対応する画面コンポーネト。
+            複数のコンポーネントを組み合わせて構成される。
+
+        Services(サービス層)
+            データ取得や API 呼び出しロジックを管理。
+            非同期処理や外部システムとの連携を担当。
+
+        Store(状態管理層)
+            Redux Toolkit などを使ったグローバルな状態管理。
+            スライス(slice)やストア構成を格納。
+
+        Utils(ユーティリティ)
+            共通のロジックやヘルパー関数。
+            プロジェクト全体で再利用される関数群。
+
+
+状態管理
+    状態の分類
+    RTKQueryの設計
+
+非同期処理設計
+    APIコールの行い方の統一
+    エラーハンドリングの統一
+
+
+
+詳細なディレクトリ設計

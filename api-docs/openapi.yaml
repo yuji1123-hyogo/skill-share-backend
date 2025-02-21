@@ -1,0 +1,43 @@
+openapi: 3.0.0
+info:
+  title: "My Application API"
+  description: "API ドキュメント"
+  version: "1.0.0"
+
+servers:
+  - url: "http://localhost:5000"
+    description: "ローカル開発環境"
+
+tags:
+  - name: "Auth"
+    description: "認証関連エンドポイント"
+  - name: "Users"
+    description: "ユーザー関連エンドポイント"
+  - name: "Clubs"
+    description: "クラブ関連エンドポイント"
+  - name: "Events"
+    description: "イベント関連エンドポイント"
+  - name: "Posts"
+    description: "投稿関連エンドポイント"
+  - name: "Comments"
+    description: "コメント関連エンドポイント"
+
+paths:
+  /auth:
+    $ref: "./schemas/auth.yaml"
+  /users:
+    $ref: "./schemas/user.yaml"
+  /clubs:
+    $ref: "./schemas/club.yaml"
+  /events:
+    $ref: "./schemas/event.yaml"
+  /posts:
+    $ref: "./schemas/post.yaml"
+  /comments:
+    $ref: "./schemas/comment.yaml"
+
+components:
+  schemas:
+    $ref: "./schemas/components.yaml"
+  responses:
+    $ref: "./schemas/errors.yaml"

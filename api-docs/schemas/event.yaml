@@ -1,0 +1,277 @@
+paths:
+  /events:
+    post:
+      summary: "イベントの作成"
+      description: "新しいイベントを作成します。"
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          $ref: "#/components/responses/Created"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /events/{eventId}:
+    get:
+      summary: "イベントの詳細取得"
+      description: "指定したイベントの詳細情報を取得します。"
+      tags:
+        - Events
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9e"
+      responses:
+        "200":
+          description: "イベントの詳細"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+    put:
+      summary: "イベントのステータス更新"
+      description: "イベントの状態を `upcoming` → `ongoing` → `completed` へ変更します。"
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9e"
+      responses:
+        "200":
+          description: "イベントのステータス更新成功"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/join:
+    post:
+      summary: "イベントへの参加"
+      description: "ユーザーがイベントに参加します。"
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9e"
+      responses:
+        "200":
+          description: "イベントに参加成功"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "イベントに参加しました"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/vote:
+    post:
+      summary: "MVP 投票"
+      description: "イベントの MVP を投票します。"
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9e"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteForMvpRequest"
+      responses:
+        "200":
+          description: "MVP 投票成功"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "MVP投票が完了しました"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /events/{eventId}/mvp:
+    post:
+      summary: "MVP 確定"
+      description: "投票結果に基づき MVP を決定します。"
+      tags:
+        - Events
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: eventId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: "64b7a0e58eaf5e001c8b3d9e"
+      responses:
+        "200":
+          description: "MVP 確定成功"
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "MVPが確定しました"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  schemas:
+    CreateEventRequest:
+      type: object
+      required:
+        - name
+        - club
+        - eventtags
+      properties:
+        name:
+          type: string
+          example: "React Workshop"
+        description:
+          type: string
+          nullable: true
+          example: "A workshop about React best practices."
+        date:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2024-07-15T10:00:00Z"
+        location:
+          type: string
+          nullable: true
+          example: "Online"
+        club:
+          type: string
+          example: "64b7a0e58eaf5e001c8b3d9c"
+        eventtags:
+          type: array
+          items:
+            type: string
+            example: "ReactJS"
+
+    VoteForMvpRequest:
+      type: object
+      required:
+        - candidate
+      properties:
+        candidate:
+          type: string
+          example: "64b7a0e58eaf5e001c8b3d9f"
+
+  responses:
+    Created:
+      description: "リソース作成成功"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "イベントが作成されました"
+
+    BadRequest:
+      description: "無効なリクエスト"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "無効なリクエストです"
+
+    Unauthorized:
+      description: "認証エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "認証が必要です"
+
+    Forbidden:
+      description: "権限エラー"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "権限がありません"
+
+    NotFound:
+      description: "リソースが見つかりません"
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              message:
+                type: string
+                example: "イベントが見つかりません"
