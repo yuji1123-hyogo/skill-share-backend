@@ -47,7 +47,7 @@ const io = new Server(server, { cors: { origin: "*" } });
 //  MongoDBへの接続
 const mongo_DB_URI = process.env.MONGO_DB_URI;
 const mongo_Atlas_URI = process.env.MONGO_ATLAS_URI;
-mongoose.connect(mongo_DB_URI, {
+mongoose.connect(mongo_Atlas_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 });
