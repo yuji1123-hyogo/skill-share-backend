@@ -31,7 +31,7 @@ import errorHandler from "./middlewears/errorHandler.js"
 
 //  CORS設定
 const corsOptions = {
-  origin: "*",
+  origin: ["https://skill-share-git-main-yuji1123-hyogos-projects.vercel.app/","http://localhost:3000","http://localhost:3001"],
   credentials: true, // クッキーを許可
 };
 
