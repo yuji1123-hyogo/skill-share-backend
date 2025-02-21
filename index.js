@@ -34,7 +34,9 @@ const corsOptions = {
   origin: [
     "http://localhost:3001",
     "http://localhost:3000",
-    "https://skill-share-frontend-git-master-yuji1123-hyogos-projects.vercel.app",
+    "skill-share-git-main-yuji1123-hyogos-projects.vercel.app",
+    "skill-share-prr30o8mh-yuji1123-hyogos-projects.vercel.app",
+    "https://skill-share-prr30o8mh-yuji1123-hyogos-projects.vercel.app"
   ],
   credentials: true, // クッキーを許可
 };
