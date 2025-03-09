@@ -2,7 +2,7 @@ import Event from "../models/Event.js";
 
 
 /**
- * ✅ イベント作成
+ * イベント作成
  */
 export const createEventRepository = async (eventData) => {
   return await Event.create(eventData);
@@ -78,7 +78,7 @@ export const getEventWithUserDetailsRepository = async (eventId) => {
 
 
 /**
- * ✅ イベント詳細取得
+ * イベント詳細取得
  */
 export const getEventByIdRepository = async (eventId) => {
   return await Event.findById(eventId);
@@ -86,7 +86,7 @@ export const getEventByIdRepository = async (eventId) => {
 
 
 /**
- * ✅ イベント参加
+ * イベント参加
  */
 export const addParticipantRepository = async (eventId, userId) => {
   const event = await Event.findById(eventId);
@@ -100,14 +100,14 @@ export const addParticipantRepository = async (eventId, userId) => {
 
 
 /**
- * ✅ イベントステータス更新
+ * イベントステータス更新
  */
 export const updateEventStatusRepository = async (eventId, status) => {
   return await Event.findByIdAndUpdate(eventId, { status }, { new: true });
 };
 
 /**
- * ✅ MVP 投票
+ * MVP 投票
  */
 export const voteForMvpRepository = async (eventId, voterId, candidateId) => {
   const event = await Event.findById(eventId);
@@ -123,7 +123,7 @@ export const voteForMvpRepository = async (eventId, voterId, candidateId) => {
 };
 
 /**
- * ✅ MVP 決定 
+ * MVP 決定 
  */
 export const determineMvpRepository = async (eventId, mvpId) => {
   return await Event.findByIdAndUpdate(eventId, { mvp: mvpId }, { new: true });
@@ -131,7 +131,7 @@ export const determineMvpRepository = async (eventId, mvpId) => {
 
 
 /**
- * ✅ イベントをIDで取得
+ * イベントをIDで取得
  * @param {string} eventId - イベントのID
  * @returns {Promise<object | null>} - イベントデータ or null
  */
@@ -140,7 +140,7 @@ export const findEventByIdRepository = async (eventId) => {
 };
 
 /**
- * ✅ イベントの経験値分配フラグを `true` に更新
+ * イベントの経験値分配フラグを `true` に更新
  */
 export const updateEventExpDistributedRepository = async (eventId) => {
   return await Event.findByIdAndUpdate(eventId, { expDistributed: true }, { new: true });

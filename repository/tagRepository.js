@@ -2,7 +2,7 @@ import User from "../models/User.js";
 import Club from "../models/Club.js";
 
 /**
- * ✅ ユーザーとクラブの全タグを取得
+ * ユーザーとクラブの全タグを取得
  * @returns {Promise<string[]>} - ユニークなタグのリスト
  */
 export const getAllTagsRepository = async () => {

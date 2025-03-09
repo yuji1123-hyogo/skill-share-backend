@@ -2,7 +2,7 @@ import { getAllTagsRepository } from "../repository/tagRepository.js";
 
 
 /**
- * ✅ タグの更新処理
+ * タグの更新処理
  * @param {Array} existingTags - 現在のタグ（[{ name: "tech", level: 2 }, ...]）
  * @param {Array} newTags - 更新リクエストのタグ（["tech", "ai"]）
  */
@@ -30,7 +30,7 @@ export const processTagsForUpdate = ({existingTags =[], newTags}) => {
 
 
 /**
- * ✅ Levenshtein Distance（編集距離）を計算
+ * Levenshtein Distance（編集距離）を計算
  * @param {string} str1 - 比較対象の文字列
  * @param {string} str2 - 検索クエリ
  * @returns {number} - 文字列の編集距離
@@ -61,7 +61,7 @@ const calculateLevenshteinDistance = (str1, str2) => {
 };
 
 /**
- * ✅ タグ検索（編集距離を考慮）
+ * タグ検索（編集距離を考慮）
  * @param {string} query - 検索クエリ
  * @param {number} threshold - 許容する編集距離
  * @param {number} limit - 最大取得件数

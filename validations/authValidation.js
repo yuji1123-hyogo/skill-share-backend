@@ -1,6 +1,6 @@
 import * as yup from "yup";
 
-// 🎯 ユーザー登録のバリデーションスキーマ
+// ユーザー登録のバリデーションスキーマ
 export const registerSchema = yup.object({
     username: yup
       .string()
@@ -20,7 +20,7 @@ export const registerSchema = yup.object({
       .required("パスワードは必須です"),
 });
 
-// 🎯 ログインのバリデーションスキーマ
+// ログインのバリデーションスキーマ
 export const loginSchema = yup.object({
     email: yup
       .string()
@@ -30,14 +30,14 @@ export const loginSchema = yup.object({
     password: yup.string().trim().required("パスワードは必須です"),
 });
 
-// 🎯 メールアドレス存在チェック（クエリパラメータ）
+// メールアドレス存在チェック（クエリパラメータ）
 export const checkEmailSchema = yup.object({
     email: yup
       .string()
       .trim()
 });
 
-// 🎯 ユーザー名存在チェック（クエリパラメータ）
+// ユーザー名存在チェック（クエリパラメータ）
 export const checkUsernameSchema = yup.object({
     username: yup
       .string()

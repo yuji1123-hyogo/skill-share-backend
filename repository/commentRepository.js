@@ -1,7 +1,7 @@
 import Comment from "../models/Comment.js";
 
 /**
- * ✅ コメントを作成（`author` を `populate()` する）
+ * コメントを作成（`author` を `populate()` する）
  * @param {string} content - コメント内容
  * @param {string} author - コメントの作成者（User ID）
  * @param {string} postId - 投稿 ID
@@ -19,7 +19,7 @@ export const createCommentRepository = async (commentData) => {
 };
 
 /**
- * ✅ `author` を `populate()` したコメントの詳細を取得（APIレスポンス用）
+ * `author` を `populate()` したコメントの詳細を取得（APIレスポンス用）
  * @param {string} commentId - コメント ID
  * @returns {Promise<object | null>} - `author` の詳細情報を含むコメントデータ
  */
@@ -32,7 +32,7 @@ export const getCommentWithAuthorDetailsRepository = async (commentId) => {
 };
 
 /**
- * ✅ コメントの詳細を取得（`populate()` なし）
+ * コメントの詳細を取得（`populate()` なし）
  * @param {string} commentId - コメント ID
  * @returns {Promise<object | null>} - コメントデータ
  */
@@ -50,7 +50,7 @@ export const findCommentByIdRepository = async (commentId) => {
 };
 
 /**
- * ✅ 投稿に紐づくコメント一覧を取得（ページネーション対応）
+ * 投稿に紐づくコメント一覧を取得（ページネーション対応）
  * @param {string} postId - 投稿 ID
  * @param {number} page - ページ番号（デフォルト: 1）
  * @param {number} limit - 取得する件数（デフォルト: 10）
@@ -61,7 +61,7 @@ export const getCommentsByPostIdRepository = async (postId, page, limit) => {
 };
 
 /**
- * ✅ 共有記事に紐づくコメント一覧を取得（ページネーション対応）
+ * 共有記事に紐づくコメント一覧を取得（ページネーション対応）
  * @param {string} articleId - 共有記事 ID
  * @param {number} page - ページ番号（デフォルト: 1）
  * @param {number} limit - 取得する件数（デフォルト: 10）
@@ -72,7 +72,7 @@ export const getCommentsByArticleIdRepository = async (articleId, page, limit) =
 };
 
 /**
- * ✅ フィードバックに紐づくコメント一覧を取得（ページネーション対応）
+ * フィードバックに紐づくコメント一覧を取得（ページネーション対応）
  * @param {string} feedbackId - フィードバック ID
  * @param {number} page - ページ番号（デフォルト: 1）
  * @param {number} limit - 取得する件数（デフォルト: 10）

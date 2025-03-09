@@ -6,17 +6,17 @@ export const objectIdSchema = yup
     .matches(/^[0-9a-fA-F]{24}$/, "無効なID形式です")
     .required();
 
-// 🎯 コメント作成時のバリデーション
+// コメント作成時のバリデーション
 export const createCommentSchema = yup.object({
     content: yup.string().trim().required("コメント内容は必須です"),
 });
 
-// 🎯 コメントIDのバリデーション
+// コメントIDのバリデーション
 export const commentIdParamSchema = yup.object({
     commentId: objectIdSchema,
 });
 
-// 🎯 投稿IDのバリデーション（コメント一覧取得時）
+// 投稿IDのバリデーション（コメント一覧取得時）
 export const postIdParamSchema = yup.object({
     postId: objectIdSchema,
 });

@@ -14,7 +14,7 @@ import {
   import { findUserByIdPublicRepository, updateUserTagsRepository } from "../repository/userRepository.js";
   
   /**
-   * ✅ イベント作成
+   * イベント作成
    */
   export const createEventService = async (eventData) => {
     const event = await createEventRepository(eventData);
@@ -22,16 +22,16 @@ import {
     // クラブの `events` フィールドにイベント ID を追加
     await updateClubRepository(eventData.club, { $addToSet: { events: event._id } });
   
-    // ✅ `populate()` したイベントを返す
+    // `populate()` したイベントを返す
     return await getEventWithUserDetailsRepository(event._id);
   };
   
   
   /**
-   * ✅ イベント詳細取得
+   * イベント詳細取得
    */
   export const getEventByIdService = async (eventId) => {
-    // ✅ `populate()` あり
+    // `populate()` あり
     const event = await getEventWithUserDetailsRepository(eventId); 
     if (!event) throw { status: 404, message: "イベントが見つかりません" };
     return event;
@@ -44,10 +44,10 @@ import {
 
 
 /**
- * ✅ イベント参加
+ * イベント参加
  */
 export const participateEventService = async (eventId, userId) => {
-  const event = await getEventByIdRepository(eventId); // ✅ `populate()` なし
+  const event = await getEventByIdRepository(eventId); // `populate()` なし
   if (!event) throw { status: 404, message: "イベントが見つかりません" };
 
   if (event.participants.includes(userId)) {
@@ -56,14 +56,14 @@ export const participateEventService = async (eventId, userId) => {
 
   await addParticipantRepository(eventId, userId);
 
-  // ✅ `populate()` されたイベントを返す
+  // `populate()` されたイベントを返す
   return await getEventWithUserDetailsRepository(eventId);
 };
 
 
 
   /**
- * ✅ 次のイベントステータスを決定
+ * 次のイベントステータスを決定
  * @param {string} currentStatus - 現在のステータス
  * @returns {string | null} - 次のステータス (変更不可なら `null`)
  */
@@ -79,13 +79,13 @@ const getNextEventStatus = (currentStatus) => {
 
 
 /**
- * ✅ イベントステータスを次のステータスに更新（リクエストのデータ不要）
+ * イベントステータスを次のステータスに更新（リクエストのデータ不要）
  * @param {string} eventId - イベント ID
  * @param {string} userId - 操作を行うユーザー ID
  * @returns {Promise<object>} - 更新後のイベント
  */
 export const updateEventStatusService = async (eventId, userId) => {
-  const event = await getEventByIdRepository(eventId); // ✅ `populate()` なし
+  const event = await getEventByIdRepository(eventId); // `populate()` なし
   if (!event) throw { status: 404, message: "イベントが見つかりません" };
 
   if (event.host.toString() !== userId) {
@@ -99,7 +99,7 @@ export const updateEventStatusService = async (eventId, userId) => {
 
   await updateEventStatusRepository(eventId, nextStatus);
 
-  // ✅ `populate()` されたイベントを返す
+  // `populate()` されたイベントを返す
   return await getEventWithUserDetailsRepository(eventId);
 };
 
@@ -109,10 +109,10 @@ export const updateEventStatusService = async (eventId, userId) => {
 
   
   /**
-   * ✅ MVP 投票
+   * MVP 投票
    */
   export const voteForMvpService = async (eventId, voterId, candidateId) => {
-    const event = await getEventByIdRepository(eventId); // ✅ `populate()` なし
+    const event = await getEventByIdRepository(eventId); // `populate()` なし
     if (!event) throw { status: 404, message: "イベントが見つかりません" };
   
     if (event.status !== "ongoing") {
@@ -129,7 +129,7 @@ export const updateEventStatusService = async (eventId, userId) => {
   
     await voteForMvpRepository(eventId, voterId, candidateId);
   
-    // ✅ 修正: `populate()` したイベントを返す
+    // 修正: `populate()` したイベントを返す
     return await getEventWithUserDetailsRepository(eventId);
   };
   
@@ -137,10 +137,10 @@ export const updateEventStatusService = async (eventId, userId) => {
 
 
   /**
-   * ✅ MVP の決定
+   * MVP の決定
    */
   export const determineMvpService = async (eventId, userId) => {
-    const event = await getEventByIdRepository(eventId); // ✅ `populate()` なし
+    const event = await getEventByIdRepository(eventId); // `populate()` なし
     if (!event) throw { status: 404, message: "イベントが見つかりません" };
   
     if (event.status !== "completed") {
@@ -167,7 +167,7 @@ export const updateEventStatusService = async (eventId, userId) => {
   
     await determineMvpRepository(eventId, mvpId);
   
-    // ✅ `populate()` されたイベントを返す
+    // `populate()` されたイベントを返す
     return await getEventWithUserDetailsRepository(eventId);
   };
   
@@ -180,7 +180,7 @@ export const updateEventStatusService = async (eventId, userId) => {
     const event = await findEventByIdRepository(eventId);
     if (!event) throw { status: 404, message: "イベントが見つかりません" };
 
-    // ✅ 経験値分配の条件チェック
+    // 経験値分配の条件チェック
     if (event.status !== "completed") {
         throw { status: 400, message: "イベントが終了していないため、経験値を分配できません" };
     }
@@ -197,17 +197,17 @@ export const updateEventStatusService = async (eventId, userId) => {
     const eventTags = event.eventtags;
     const participants = event.participants;
     const mvp = event.mvp;
-    const eventClubId = event.club; // ✅ イベントのクラブID
+    const eventClubId = event.club; // イベントのクラブID
 
     const updatedUsers = new Set();
     let clubUpdated = false;
 
-    // ✅ 参加者ごとにタグを更新
+    // 参加者ごとにタグを更新
     for (const participantId of participants) {
         const user = await findUserByIdPublicRepository(participantId);
         if (!user) continue;
 
-        // ✅ ユーザーのタグ更新
+        // ユーザーのタグ更新
         let userUpdated = false;
         user.tags.forEach(tag => {
             if (eventTags.includes(tag.name)) {
@@ -227,7 +227,7 @@ export const updateEventStatusService = async (eventId, userId) => {
         }
     }
 
-    // ✅ イベントのクラブのタグを更新
+    // イベントのクラブのタグを更新
     const club = await findClubByIdRepository(eventClubId);
     if (club) {
         club.tags.forEach(tag => {
@@ -247,13 +247,13 @@ export const updateEventStatusService = async (eventId, userId) => {
         }
     }
 
-    // ✅ 経験値分配フラグを `true` に更新
+    // 経験値分配フラグを `true` に更新
     await updateEventExpDistributedRepository(eventId);
 
     return {
         message: "経験値が分配されました",
         updatedUsers: [...updatedUsers],
-        updatedClub: clubUpdated ? eventClubId : null // ✅ 更新されたクラブIDを返す
+        updatedClub: clubUpdated ? eventClubId : null // 更新されたクラブIDを返す
     };
 };
 

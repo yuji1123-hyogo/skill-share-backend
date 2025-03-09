@@ -9,7 +9,7 @@ import {
   } from "../service/eventService.js";
   
   /**
-   * ✅ イベント作成
+   * イベント作成
    */
   export const createEventController = async (req, res, next) => {
     try {
@@ -22,7 +22,7 @@ import {
   };
   
   /**
-   * ✅ イベント詳細取得
+   * イベント詳細取得
    */
   export const getEventByIdController = async (req, res, next) => {
     try {
@@ -36,7 +36,7 @@ import {
 
   
 /**
- * ✅ イベント参加
+ * イベント参加
  */
 export const participateEventController = async (req, res, next) => {
   try {
@@ -52,7 +52,7 @@ export const participateEventController = async (req, res, next) => {
 };
 
 /**
- * ✅ イベントステータスの自動更新
+ * イベントステータスの自動更新
  */
 export const updateEventStatusController = async (req, res, next) => {
   try {
@@ -66,7 +66,7 @@ export const updateEventStatusController = async (req, res, next) => {
 };
   
   /**
-   * ✅ MVP 投票
+   * MVP 投票
    */
   export const voteForMvpController = async (req, res, next) => {
     try {
@@ -80,7 +80,7 @@ export const updateEventStatusController = async (req, res, next) => {
   };
   
   /**
-   * ✅ MVP 確定 
+   * MVP 確定 
    */
   export const determineMvpController = async (req, res, next) => {
     try {
@@ -93,7 +93,7 @@ export const updateEventStatusController = async (req, res, next) => {
   };
   
   /**
-   * ✅ 経験値分配
+   * 経験値分配
    */
   export const distributeExpController = async (req, res, next) => {
     try {

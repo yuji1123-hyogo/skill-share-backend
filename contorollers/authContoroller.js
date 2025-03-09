@@ -1,7 +1,7 @@
 import { checkEmailExists, checkUsernameExists, login, registerUser } from "../service/authService.js";
 
 /**
- * ✅ ユーザー登録コントローラー
+ * ユーザー登録コントローラー
  */
 export const registerController = async (req, res, next) => {
   try {
@@ -9,12 +9,12 @@ export const registerController = async (req, res, next) => {
     const user = await registerUser(username, email, password);
     res.status(201).json({ message: `ユーザー登録が完了しました (${username} さん)` ,user:user});
   } catch (error) {
-    next(error); // ✅ グローバルエラーハンドラーへ
+    next(error); // グローバルエラーハンドラーへ
   }
 };
 
 /**
- * ✅ ユーザーログインコントローラー
+ * ユーザーログインコントローラー
  */
 export const loginController = async (req, res, next) => {
   try {
@@ -35,7 +35,7 @@ export const loginController = async (req, res, next) => {
 };
 
 /**
- * ✅ ログアウトコントローラー
+ * ログアウトコントローラー
  */
 export const logoutController = (req, res) => {
   res.clearCookie("token");
@@ -43,7 +43,7 @@ export const logoutController = (req, res) => {
 };
 
 /**
- * ✅ メールアドレスの存在チェック
+ * メールアドレスの存在チェック
  */
 export const checkEmailController = async (req, res, next) => {
   try {
@@ -61,7 +61,7 @@ export const checkEmailController = async (req, res, next) => {
 };
 
 /**
- * ✅ ユーザー名の存在チェック
+ * ユーザー名の存在チェック
  */
 export const checkUsernameController = async (req, res, next) => {
   try {

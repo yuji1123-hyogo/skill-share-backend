@@ -5,7 +5,7 @@ export const userIdParamSchema = yup.object({
     userId: yup.string().matches(/^[0-9a-fA-F]{24}$/, "無効なユーザーIDです").required(),
 });
 
-// ✅ ユーザー情報の更新バリデーション
+// ユーザー情報の更新バリデーション
 export const updateUserSchema = yup.object({
     username: yup.string().min(3, "ユーザー名は3文字以上である必要があります").max(20, "ユーザー名は20文字以内である必要があります").optional(),
     profilePicture: yup.string().url("有効なURLを入力してください").nullable().optional(),
@@ -18,13 +18,13 @@ export const updateUserSchema = yup.object({
     }).optional()
 });
 
-// ✅ ユーザー検索バリデーション
+// ユーザー検索バリデーション
 export const searchUserSchema = yup.object({
     username: yup.string().optional().nullable(),
     tags: yup.array().of(yup.string()).optional().typeError("タグは配列形式である必要があります"),
 });
 
-// ✅ フォロー/フォロー解除バリデーション
+// フォロー/フォロー解除バリデーション
 export const toggleFollowUserSchema = yup.object({
     userId: yup.string().matches(/^[0-9a-fA-F]{24}$/, "無効なユーザーIDです").required(),
 });

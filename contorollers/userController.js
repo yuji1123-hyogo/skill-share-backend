@@ -19,7 +19,7 @@ import {
     }
   };
   
-// ✅ フォロー・フォロー解除
+// フォロー・フォロー解除
 export const toggleFollowUserController = async (req, res, next) => {
   try {
     const { wasFollowing, updatedUser } = await toggleFollowUserService(req.userId, req.params.userId);
@@ -42,7 +42,7 @@ export const toggleFollowUserController = async (req, res, next) => {
   
   
 /**
- * ✅ ユーザー情報の更新
+ * ユーザー情報の更新
  */
 export const updateUserController = async (req, res, next) => {
   try {
@@ -70,7 +70,7 @@ export const updateUserController = async (req, res, next) => {
 
 
 /**
- * ✅ フォローIDリストを取得
+ * フォローIDリストを取得
  */
 export const getFollowListController = async (req, res, next) => {
   try {

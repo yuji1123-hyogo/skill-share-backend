@@ -13,7 +13,7 @@ router.post("/", upload.single("image"), async (req, res) => {
 
     res.status(200).json({
       message: "Cloudinaryへのアップロードが成功しました",
-      imageUrl: req.file.path, // ✅ 修正後
+      imageUrl: req.file.path, // 修正後
     });
   } catch (error) {
     console.error("Upload error:", error);

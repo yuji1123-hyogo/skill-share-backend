@@ -13,7 +13,7 @@ import { processTagsForUpdate } from "./tagService.js";
 
 
   /**
-   * ✅ 特定のユーザー情報を取得
+   * 特定のユーザー情報を取得
    */
   export const getPublicUserService = async (userId) => {
     const user = await findUserByIdPublicRepository(userId);
@@ -23,7 +23,7 @@ import { processTagsForUpdate } from "./tagService.js";
   
 
 /**
- * ✅ ユーザーのフォロー / フォロー解除
+ * ユーザーのフォロー / フォロー解除
  * @param {string} userId - 操作を行うユーザー ID
  * @param {string} targetUserId - フォローするユーザー ID
  * @returns {Promise<{ wasFollowing: boolean, updatedUser: User }>}
@@ -33,17 +33,17 @@ export const toggleFollowUserService = async (userId, targetUserId) => {
     throw { status: 400, message: "自身をフォローすることはできません" };
   }
 
-  // ✅ 1️⃣ フォロー対象のユーザーが存在するかチェック
+  // フォロー対象のユーザーが存在するかチェック
   const targetUser = await findUserByIdPublicRepository(targetUserId);
   if (!targetUser) {
     throw { status: 404, message: "フォローする相手が見つかりませんでした" };
   }
 
-  // ✅ 2️⃣ 現在のフォロー状態を取得
+  // 現在のフォロー状態を取得
   const user = await findUserByIdPublicRepository(userId);
   const wasFollowing = user.following.includes(targetUserId);
 
-  // ✅ 3️⃣ フォロー / フォロー解除のアクション
+  // フォロー / フォロー解除のアクション
   const action = wasFollowing ? "unfollow" : "follow";
   await updateFollowStatusRepository(userId, targetUserId, action);
 
@@ -56,10 +56,10 @@ export const toggleFollowUserService = async (userId, targetUserId) => {
 
 
   /**
-   * ✅ 参加しているクラブ一覧を取得
+   * 参加しているクラブ一覧を取得
    */
   export const getUserClubsService = async (userId) => {
-  // 1️⃣ 現在のユーザー情報を取得
+  // 現在のユーザー情報を取得
   const currentUser = await findUserByIdPublicRepository(userId);
   if (!currentUser) {
     throw { status: 404, message: "ユーザーが見つかりません" };
@@ -69,16 +69,16 @@ export const toggleFollowUserService = async (userId, targetUserId) => {
   };
   
 /**
- * ✅ ユーザー情報を更新
+ * ユーザー情報を更新
  */
 export const updateUserService = async (userId, updateData) => {
-  // 1️⃣ 現在のユーザー情報を取得
+  // 現在のユーザー情報を取得
   const currentUser = await findUserByIdPublicRepository(userId);
   if (!currentUser) {
     throw { status: 404, message: "ユーザーが見つかりません" };
   }
 
-  // 2️⃣ 名前の変更がある場合、重複チェック
+  // 名前の変更がある場合、重複チェック
   if (updateData.username && updateData.username !== currentUser.username) {
     const existingUser = await findUserByUsernameRepository(updateData.username);
     if (existingUser) {
@@ -86,12 +86,12 @@ export const updateUserService = async (userId, updateData) => {
     }
   }
 
-  // 3️⃣ タグの処理（`tagService.js` に委託）
+  // タグの処理（`tagService.js` に委託）
   if (updateData.tags && Array.isArray(updateData.tags)) {
     updateData.tags = processTagsForUpdate({existingTags:currentUser.tags, newTags:updateData.tags});
   }
 
-  // 4️⃣ ユーザー情報を更新
+  // ユーザー情報を更新
    await updateUserRepository(userId, updateData);
    const updatedUser = await findUserByIdPublicRepository(userId);
    return updatedUser;
@@ -100,7 +100,7 @@ export const updateUserService = async (userId, updateData) => {
 
 
  /**
- * ✅ ユーザーを検索し、ID のみを返す
+ * ユーザーを検索し、ID のみを返す
  * @param {string} username - ユーザー名（部分一致検索）
  * @param {Array<string>} tags - タグリスト
  * @returns {Promise<Array<string>>} - ユーザー ID のリスト
@@ -127,7 +127,7 @@ export const searchUsersService = async (username, tags = []) => {
 
 
 /**
- * ✅ フォローリスト取得サービス
+ * フォローリスト取得サービス
  */
 export const getFollowListService = async (userId) => {
   return await getFollowListRepository(userId);

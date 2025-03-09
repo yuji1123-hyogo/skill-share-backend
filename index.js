@@ -52,7 +52,7 @@ mongoose.connect(mongo_Atlas_URI, {
 const db = mongoose.connection;
 db.on("error", console.error.bind(console, "MongoDB接続エラー"));
 db.once("open", () => {
-  console.log("✅ MongoDBコネクション成功！");
+  console.log("***************** MongoDBコネクション成功！*****************");
 });
 
 //  ミドルウェア

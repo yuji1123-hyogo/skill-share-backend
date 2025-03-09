@@ -10,19 +10,19 @@ import { checkEmailController, checkUsernameController, loginController, logoutC
 
 const router = express.Router();
 
-// ✅ ユーザー登録
+// ユーザー登録
 router.post("/register", validateRequest(registerSchema), registerController);
 
-// ✅ ログイン
+// ログイン
 router.post("/login", validateRequest(loginSchema), loginController);
 
-// ✅ メールアドレス存在チェック
+// メールアドレス存在チェック
 router.get("/check-email", validateRequest(checkEmailSchema,"query"), checkEmailController);
 
-// ✅ ユーザー名存在チェック
+// ユーザー名存在チェック
 router.get("/check-username", validateRequest(checkUsernameSchema,"query"), checkUsernameController);
 
-// ✅ ログアウト
+// ログアウト
 router.post("/logout", logoutController);
 
 export default router;

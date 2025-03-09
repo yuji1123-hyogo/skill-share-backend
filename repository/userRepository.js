@@ -36,7 +36,7 @@ export const findUserByUsernameRepository = async (username) => {
 
 
 /**
- * ✅ 特定のユーザー情報を取得
+ * 特定のユーザー情報を取得
  * @param {string} userId - ユーザー ID
  * @returns {Promise<object | null>} - ユーザー情報
  */
@@ -67,7 +67,7 @@ export const findUserByIdPublicRepository = async (userId) => {
 };
 
 /**
- * ✅ ユーザーのフォロー状態を更新（フォロー/フォロー解除）
+ * ユーザーのフォロー状態を更新（フォロー/フォロー解除）
  * @param {string} userId - 操作を行うユーザー ID
  * @param {string} targetUserId - フォローする/解除するユーザー ID
  * @param {"follow" | "unfollow"} action - "follow" or "unfollow"
@@ -84,7 +84,7 @@ export const updateFollowStatusRepository = async (userId, targetUserId, action)
 
 
 /**
- * ✅ 参加しているクラブ一覧を取得
+ * 参加しているクラブ一覧を取得
  * @param {string} userId - ユーザー ID
  * @returns {Promise<string[]>} - クラブ ID 配列
  */
@@ -98,7 +98,7 @@ export const getUserClubsRepository = async (userId) => {
 };
 
 /**
- * ✅ ユーザー情報を更新
+ * ユーザー情報を更新
  * @param {string} userId - ユーザー ID
  * @param {object} updateData - 更新するデータ
  * @returns {Promise<object | null>} - 更新後のユーザー情報
@@ -109,7 +109,7 @@ export const updateUserRepository = async (userId, updateData) => {
 
 
 /**
- * ✅ ユーザー検索
+ * ユーザー検索
  * @param {object} query - 検索クエリ
  */
 export const searchUsersRepository = async (query) => {
@@ -141,7 +141,7 @@ export const searchUsersRepository = async (query) => {
 
 
 /**
- * ✅ ユーザーのタグ情報を更新
+ * ユーザーのタグ情報を更新
  * @param {string} userId - ユーザーのID
  * @param {Array} updatedTags - 更新後のタグリスト
  * @returns {Promise<object | null>} - 更新後のユーザーデータ or null
@@ -152,7 +152,7 @@ export const updateUserTagsRepository = async (userId, updatedTags) => {
 
 
 /**
- * ✅ フォローリストを取得
+ * フォローリストを取得
  * @param {string} userId - ユーザーID
  * @returns {Promise<Array<{ id: string, username: string, profilePicture?: string }>>}
  */

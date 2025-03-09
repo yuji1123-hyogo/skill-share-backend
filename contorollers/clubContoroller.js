@@ -10,7 +10,7 @@ import {
   } from "../service/clubService.js";
   
   /**
-   * ✅ クラブを作成
+   * クラブを作成
    */
   export const createClubController = async (req, res, next) => {
     try {
@@ -26,7 +26,7 @@ import {
   };
   
   /**
-   * ✅ クラブの詳細を取得
+   * クラブの詳細を取得
    */
   export const getClubDetailController = async (req, res, next) => {
     try {
@@ -39,7 +39,7 @@ import {
   };
   
   /**
-   * ✅ クラブのメンバー一覧（ID のみ）を取得
+   * クラブのメンバー一覧（ID のみ）を取得
    */
   export const getClubMemberIdsController = async (req, res, next) => {
     try {
@@ -53,7 +53,7 @@ import {
   };
   
   /**
-   * ✅ クラブのイベント一覧を取得(populateされた)
+   * クラブのイベント一覧を取得(populateされた)
    */
   export const getClubEventsController = async (req, res, next) => {
     try {
@@ -66,7 +66,7 @@ import {
   };
   
   /**
-   * ✅ クラブにユーザーを追加（参加）
+   * クラブにユーザーを追加（参加）
    */
   export const joinClubController = async (req, res, next) => {
     try {
@@ -83,7 +83,7 @@ import {
 
 
 /**
- * ✅ クラブ情報の更新
+ * クラブ情報の更新
  */
 export const updateClubController = async (req, res, next) => {
   try {
@@ -99,7 +99,7 @@ export const updateClubController = async (req, res, next) => {
 };
   
 /**
- * ✅ クラブのリストを検索する
+ * クラブのリストを検索する
  */
 export const searchClubsController = async (req, res, next) => {
   try {
@@ -113,7 +113,7 @@ export const searchClubsController = async (req, res, next) => {
 };
   
 /**
- * ✅ 地図情報でクラブを検索
+ * 地図情報でクラブを検索
  */
 export const searchClubsByLocationController = async (req, res, next) => {
   try {
